@@ -6,6 +6,7 @@ import com.example.GreeterMain.SayHello
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.ActorSystem
 
 //#greeter-actor
 object Greeter {
