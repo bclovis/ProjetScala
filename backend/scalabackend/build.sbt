@@ -8,21 +8,27 @@ resolvers += "Akka library repository".at("https://repo.akka.io/maven")
 
 lazy val akkaVersion = "2.6.16"
 
-// Run in a separate JVM, to make sure sbt waits until all threads have
-// finished before returning.
-// If you want to keep the application running while executing other
-// sbt tasks, consider https://github.com/spray/sbt-revolver/
+// Pour éviter les conflits, supprimons la duplication de logback-classic
 fork := true
 
 libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-actor-typed" % akkaVersion,
-  "ch.qos.logback" % "logback-classic" % "1.2.13",
+  "ch.qos.logback" % "logback-classic" % "1.4.14", // Garder cette version
   "com.typesafe.akka" %% "akka-actor-testkit-typed" % akkaVersion % Test,
   "org.scalatest" %% "scalatest" % "3.2.15" % Test,
   "com.typesafe.akka" %% "akka-stream" % akkaVersion,
   "com.typesafe.akka" %% "akka-http" % "10.2.10",
   "com.lihaoyi" %% "upickle" % "3.1.1",
   "org.slf4j" % "slf4j-api" % "2.0.16",
-  "ch.qos.logback" % "logback-classic" % "1.4.14"
-)
+  "ch.qos.logback" % "logback-classic" % "1.4.14",
 
+  // Akka HTTP pour créer des API REST
+  "com.typesafe.akka" %% "akka-http-spray-json" % "10.2.9",
+
+  // Slick pour interagir avec PostgreSQL
+  "com.typesafe.slick" %% "slick" % "3.3.3",
+  "org.postgresql" % "postgresql" % "42.3.3",
+
+  // Config (application.conf)
+  "com.typesafe" % "config" % "1.4.1"
+)
