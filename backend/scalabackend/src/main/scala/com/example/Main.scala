@@ -1,3 +1,4 @@
+import com.example.Database
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.scaladsl.Behaviors
 import org.slf4j.LoggerFactory

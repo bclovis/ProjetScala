@@ -12,17 +12,22 @@ const LoginPage = () => {
         setError("");
 
         try {
-            const response = await fetch("http://localhost:8080/api/login", {
+            const response = await fetch("http://localhost:8080/login", {  // URL de l'API /login
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ email, password }),
             });
 
             const data = await response.json();
-            if (!response.ok) throw new Error(data.message || "Échec de connexion");
 
-            localStorage.setItem("token", data.token);
-            navigate("/dashboard"); // Redirige vers le tableau de bord après connexion
+            // Si la connexion réussie, tu stockes un token et tu rediriges
+            if (response.ok) {
+                localStorage.setItem("token", data.token || "dummy_token");
+                navigate("/dashboard"); // Redirige vers le tableau de bord après connexion
+            } else {
+                // Si le login échoue, tu affiches l'erreur
+                throw new Error(data.message || "Échec de connexion");
+            }
         } catch (err) {
             setError(err.message);
         }
