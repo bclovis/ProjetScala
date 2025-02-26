@@ -33,13 +33,16 @@ const Dashboard = () => {
             <div className="dashboard-wrapper">
                 <h1>Your Dashboard</h1>
                 {error && <p>{error}</p>}
+                <img src="/assets/Logo.png" className="logo"/>
+
                 <ul>
                     {portfolios.map((portfolio) => (
                         <li key={portfolio.id}>{portfolio.name}</li> // Afficher le nom du portefeuille
                     ))}
                 </ul>
-                <CreatePortfolio /> {/* Ajouter un formulaire pour créer un portefeuille */}
+                <CreatePortfolio/> {/* Ajouter un formulaire pour créer un portefeuille */}
             </div>
+
         </div>
     );
 };

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import '../styles/LoginPage.css'; // Assurez-vous que le fichier CSS est importé
 import '../styles/index.css';
+import logo from '../assets/Logo.png';
 
 const LoginPage = () => {
     const [email, setEmail] = useState("");
@@ -31,35 +32,47 @@ const LoginPage = () => {
     };
 
     return (
-        <div className="wrapper">  {/* La classe wrapper va maintenant centrer tout le contenu */}
-            <h1>Connexion</h1>
-            {error && <p className="error-message">{error}</p>} {/* Affichage des erreurs */}
-            <form onSubmit={handleLogin} className="form-container">
-                <div className="input-box">
-                    <input
-                        type="email"
-                        placeholder="Email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                    />
+        <div>
+            {/* Navbar - Positionnée tout en haut de la page */}
+            <nav className="navbar">
+                <img src={logo} className="logo" alt="Logo"/>
+                <div className="nav-links">
+                <button className="nav-button" onClick={() => navigate('/login')}>Connexion</button>
+                    <button className="nav-button" onClick={() => navigate('/register')}>Nouveau</button>
                 </div>
+            </nav>
 
-                <div className="input-box">
-                    <input
-                        type="password"
-                        placeholder="Mot de passe"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                    />
+            {/* Login Form */}
+            <div className="wrapper">
+                <h1>Connexion</h1>
+                {error && <p className="error-message">{error}</p>}
+                <form onSubmit={handleLogin}>
+                    <div className="input-box">
+                        <input
+                            type="email"
+                            placeholder="Email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                        />
+                    </div>
+
+                    <div className="input-box">
+                        <input
+                            type="password"
+                            placeholder="Mot de passe"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                        />
+                    </div>
+
+                    <button type="submit" className="button">Se connecter</button>
+                </form>
+
+                <div className="register-link">
+                    <p>
+                        Pas encore de compte ? <a href="/register">Nouveau</a>
+                    </p>
                 </div>
-
-                <button type="submit" className="button">Se connecter</button>
-            </form>
-
-            <div className="register-link">
-                <p>
-                    Pas encore de compte ? <a href="/register">S'inscrire</a>
-                </p>
             </div>
         </div>
     );
