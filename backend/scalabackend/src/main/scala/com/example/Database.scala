@@ -7,8 +7,8 @@ object Database {
 
   // Paramètres de connexion à PostgreSQL
   val url = "jdbc:postgresql://localhost:5432/portfolio_db"
-  val user = "elouanekoka"
-  val password = "postgres"
+  val user = "postgres"
+  val password = "cytech0001"
   val driver = "org.postgresql.Driver"
 
   // Charger le driver PostgreSQL

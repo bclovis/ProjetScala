@@ -1,5 +1,6 @@
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
+import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.ws.{Message, TextMessage}
 import akka.http.scaladsl.server.Directives._
 import akka.stream.scaladsl.{Flow, Sink, Source}
@@ -7,33 +8,29 @@ import akka.stream.{ActorMaterializer, OverflowStrategy}
 import io.circe.syntax._
 import io.circe.generic.auto._
 import scala.concurrent.ExecutionContext.Implicits.global
-
 import scala.collection.mutable
 import scala.concurrent.duration._
-import scala.io.StdIn
-import scala.concurrent.Await
+import scala.concurrent.{Await, Future}
 import scala.concurrent.duration.Duration
 
 // Cas classes pour structurer les données
-case class MarketPrice(symbol: String, price: Double, assetType: String, change: Option[Double] = None)
+case class MarketPoint(timestamp: Long, price: Double)
+case class MarketPrice(symbol: String, prices: List[MarketPoint], assetType: String, change: Option[Double] = None)
 case class MarketData(
                        stocks: List[MarketPrice],
                        crypto: Map[String, MarketPrice],
                        forex: Map[String, MarketPrice]
                      )
 
-
 object MarketDataStream {
-  // Stocker les anciens prix pour calculer la variation
-  val previousPrices = mutable.Map[String, Double]()
   def main(args: Array[String]): Unit = {
     implicit val system: ActorSystem = ActorSystem("MarketDataSystem")
     implicit val materializer: ActorMaterializer = ActorMaterializer()
     import system.dispatcher
 
     val marketDataSource: Source[Message, _] = Source
-      .tick(0.seconds, 10.seconds, "tick")
-      .mapAsync(1)(_ => fetchMarketData())
+      .tick(0.seconds, 30.seconds, "tick")
+      .mapAsync(1)(_ => fetchMarketData()(system))
       .map(data => TextMessage(data.asJson.noSpaces))
 
     def marketDataFlow: Flow[Message, Message, _] =
@@ -49,31 +46,79 @@ object MarketDataStream {
     Await.result(system.whenTerminated, Duration.Inf)
   }
 
-  def fetchMarketData(): scala.concurrent.Future[MarketData] = {
-    scala.concurrent.Future {
-      val newData = MarketData(
-        stocks = List(
-          MarketPrice("AAPL", 150.25 + scala.util.Random.nextDouble() * 2 - 1, "Stock"),
-          MarketPrice("GOOGL", 2800.50 + scala.util.Random.nextDouble() * 10 - 5, "Stock")
-        ).map(computeChange),
-        crypto = Map(
-          "Bitcoin" -> computeChange(MarketPrice("Bitcoin", 52345.67 + scala.util.Random.nextDouble() * 200 - 100, "Crypto")),
-          "Ethereum" -> computeChange(MarketPrice("Ethereum", 3456.78 + scala.util.Random.nextDouble() * 50 - 25, "Crypto"))
-        ),
-        forex = Map(
-          "Euro" -> computeChange(MarketPrice("Euro", 1.089 + scala.util.Random.nextDouble() * 0.01 - 0.005, "Forex")),
-          "Livre sterling" -> computeChange(MarketPrice("Livre sterling", 1.254 + scala.util.Random.nextDouble() * 0.01 - 0.005, "Forex"))
-        )
-      )
+  def fetchMarketData()(implicit system: ActorSystem): Future[MarketData] = {
+    val stockSymbols = List("AAPL", "GOOGL")
+    val cryptoSymbols = List("BTC-EUR", "ETH-EUR", "ADA-EUR", "XRP-EUR", "SOL-EUR", "LTC-EUR", "DOGE-EUR", "BNB-EUR", "MATIC-EUR", "DOT-EUR")
+    val forexSymbols = List("USDEUR=X", "GBPEUR=X", "JPYEUR=X", "CHFEUR=X", "CADEUR=X", "AUDEUR=X", "NZDEUR=X", "SEKEUR=X")
 
-      newData
+    val stockFutures = Future.sequence(stockSymbols.map(fetchYahooPrice(_, "Stock")))
+    val cryptoFutures = Future.sequence(cryptoSymbols.map(fetchYahooPrice(_, "Crypto")))
+    val forexFutures = Future.sequence(forexSymbols.map(fetchYahooPrice(_, "Forex")))
+
+    for {
+      stocks <- stockFutures
+      cryptos <- cryptoFutures
+      forex <- forexFutures
+    } yield {
+      MarketData(
+        stocks = stocks,
+        crypto = cryptos.map(c => c.symbol -> c).toMap,
+        forex = forex.map(f => f.symbol -> f).toMap
+      )
     }
   }
 
-  def computeChange(price: MarketPrice): MarketPrice = {
-    val previousPrice = previousPrices.getOrElse(price.symbol, price.price)
-    val changePercent = ((price.price - previousPrice) / previousPrice) * 100
-    previousPrices(price.symbol) = price.price // Mettre à jour le dernier prix
-    price.copy(change = Some(changePercent))
+  def fetchYahooPrice(symbol: String, assetType: String)(implicit system: ActorSystem): Future[MarketPrice] = {
+    val url = s"https://query1.finance.yahoo.com/v8/finance/chart/$symbol"
+    val request = HttpRequest(uri = url)
+
+    Http().singleRequest(request).flatMap { response =>
+      response.entity.toStrict(5.seconds).map { entity =>
+        val jsonString = entity.data.utf8String
+        io.circe.parser.parse(jsonString) match {
+          case Right(json) =>
+            val cursor = json.hcursor
+
+            // Récupération des timestamps et des prix d'ouverture
+            val timestamps = cursor
+              .downField("chart")
+              .downField("result")
+              .downArray
+              .downField("timestamp")
+              .as[Seq[Long]]
+              .getOrElse(Seq())
+
+            val openPrices = cursor
+              .downField("chart")
+              .downField("result")
+              .downArray
+              .downField("indicators")
+              .downField("quote")
+              .downArray
+              .downField("open")
+              .as[Seq[Double]]
+              .getOrElse(Seq())
+
+            val points = timestamps.zip(openPrices).collect {
+              case (ts, price) if !price.isNaN && price > 0.0 => MarketPoint(ts * 1000, price)
+            }.toList // Convertir en List ici
+
+            // Calcul de la variation en pourcentage
+            val change = if (points.length >= 2) {
+              val firstPrice = points.head.price
+              val lastPrice = points.last.price
+              Some(((lastPrice - firstPrice) / firstPrice) * 100)
+            } else {
+              None
+            }
+
+            MarketPrice(symbol, points, assetType, change)
+
+          case Left(error) =>
+            println(s"❌ Erreur de parsing JSON pour $symbol : ${error.getMessage}")
+            MarketPrice(symbol, List(), assetType)
+        }
+      }
+    }
   }
 }
