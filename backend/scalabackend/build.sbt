@@ -8,15 +8,12 @@ resolvers += "Akka library repository".at("https://repo.akka.io/maven")
 
 lazy val akkaVersion = "2.6.16"
 
-// Run in a separate JVM, to make sure sbt waits until all threads have
-// finished before returning.
-// If you want to keep the application running while executing other
-// sbt tasks, consider https://github.com/spray/sbt-revolver/
+// Pour éviter les conflits, supprimons la duplication de logback-classic
 fork := true
 
 libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-actor-typed" % akkaVersion,
-  "ch.qos.logback" % "logback-classic" % "1.2.13",
+  "ch.qos.logback" % "logback-classic" % "1.4.14", // Garder cette version
   "com.typesafe.akka" %% "akka-actor-testkit-typed" % akkaVersion % Test,
   "org.scalatest" %% "scalatest" % "3.2.15" % Test,
   "com.typesafe.akka" %% "akka-stream" % akkaVersion,
@@ -27,9 +24,18 @@ libraryDependencies ++= Seq(
   "io.circe" %% "circe-core" % "0.14.1",
   "io.circe" %% "circe-generic" % "0.14.1",
   "io.circe" %% "circe-parser" % "0.14.1",
-  "com.softwaremill.sttp.client3" %% "core" % "3.6.0",
-  "com.softwaremill.sttp.client3" %% "circe" % "3.6.0"
 
+  // Akka HTTP pour créer des API REST
+  "com.typesafe.akka" %% "akka-http-spray-json" % "10.2.10",
+
+  // Slick pour interagir avec PostgreSQL
+  "com.typesafe.slick" %% "slick" % "3.3.3",
+  "org.postgresql" % "postgresql" % "42.3.3",
+  "org.mindrot" % "jbcrypt" % "0.4",
+
+  // Config (application.conf)
+  "com.typesafe" % "config" % "1.4.1",
+  "com.auth0" % "java-jwt" % "3.18.2",  // JWT pour l'authentification
+  "at.favre.lib" % "bcrypt" % "0.9.0"   // bcrypt pour le hashage des mots de passe
 
 )
-
