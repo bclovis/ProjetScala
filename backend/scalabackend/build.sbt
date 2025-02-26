@@ -24,6 +24,8 @@ libraryDependencies ++= Seq(
   "io.circe" %% "circe-core" % "0.14.1",
   "io.circe" %% "circe-generic" % "0.14.1",
   "io.circe" %% "circe-parser" % "0.14.1",
+  "com.pauldijou" %% "jwt-core" % "4.2.0",
+
 
   // Akka HTTP pour créer des API REST
   "com.typesafe.akka" %% "akka-http-spray-json" % "10.2.10",

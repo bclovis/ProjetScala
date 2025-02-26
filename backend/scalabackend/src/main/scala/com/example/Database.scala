@@ -1,5 +1,6 @@
 package com.example
 import java.sql.{Connection, DriverManager, ResultSet}
+
 import scala.concurrent.{Future, ExecutionContext}
 import scala.util.{Failure, Success}
 
