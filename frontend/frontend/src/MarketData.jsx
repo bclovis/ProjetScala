@@ -25,7 +25,7 @@ function MarketDashboard() {
     }, []);
 
     const generateChartData = (assetData, label) => ({
-        labels: assetData.prices.map(point => new Date(point.timestamp - 3600000).toLocaleTimeString()),
+        labels: assetData.prices.map(point => new Date(point.timestamp).toLocaleTimeString()),
         datasets: [{
             label: label,
             data: assetData.prices.map(point => point.price),
@@ -90,7 +90,7 @@ function MarketDashboard() {
 
             {selectedAsset && (
                 <div>
-                    <h2>Graphique pour {selectedAsset.symbol} (UTC)</h2>
+                    <h2>Graphique pour {selectedAsset.symbol}</h2>
                     <Line data={generateChartData(selectedAsset, `${selectedAsset.symbol} (${selectedAsset.assetType})`)} />
                 </div>
             )}
