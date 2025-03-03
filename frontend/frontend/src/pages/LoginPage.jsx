@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import '../styles/LoginPage.css'; // Assurez-vous que le fichier CSS est importé
-import '../styles/index.css';
+import '../styles/LoginPage.css';
 import logo from '../assets/Logo.png';
 
 const LoginPage = () => {
@@ -15,7 +14,7 @@ const LoginPage = () => {
         setError("");
 
         try {
-            const response = await fetch("http://localhost:8080/login", {
+            const response = await fetch("http://localhost:8080/api/login", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ email, password }),
@@ -25,7 +24,7 @@ const LoginPage = () => {
             if (!response.ok) throw new Error(data.message || "Échec de connexion");
 
             localStorage.setItem("token", data.token);
-            navigate("/dashboard"); // Redirige vers le tableau de bord après connexion
+            navigate("/dashboard");
         } catch (err) {
             setError(err.message);
         }
@@ -33,16 +32,14 @@ const LoginPage = () => {
 
     return (
         <div>
-            {/* Navbar - Positionnée tout en haut de la page */}
             <nav className="navbar">
                 <img src={logo} className="logo" alt="Logo"/>
                 <div className="nav-links">
-                <button className="nav-button" onClick={() => navigate('/login')}>Connexion</button>
+                    <button className="nav-button" onClick={() => navigate('/login')}>Connexion</button>
                     <button className="nav-button" onClick={() => navigate('/register')}>Nouveau</button>
                 </div>
             </nav>
 
-            {/* Login Form */}
             <div className="wrapper">
                 <h1>Connexion</h1>
                 {error && <p className="error-message">{error}</p>}
@@ -55,7 +52,6 @@ const LoginPage = () => {
                             onChange={(e) => setEmail(e.target.value)}
                         />
                     </div>
-
                     <div className="input-box">
                         <input
                             type="password"
@@ -64,7 +60,6 @@ const LoginPage = () => {
                             onChange={(e) => setPassword(e.target.value)}
                         />
                     </div>
-
                     <button type="submit" className="button">Se connecter</button>
                 </form>
 
