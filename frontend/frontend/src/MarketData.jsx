@@ -7,7 +7,6 @@ ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, T
 
 function MarketDashboard() {
     const [marketData, setMarketData] = useState({ stocks: [], crypto: {}, forex: {} });
-    const [time, setTime] = useState([]);
     const [selectedAsset, setSelectedAsset] = useState(null);
 
     useEffect(() => {
@@ -18,7 +17,6 @@ function MarketDashboard() {
             console.log('Données reçues :', data);
 
             setMarketData(data);
-            setTime(data.crypto?.[Object.keys(data.crypto)[0]]?.prices.map(point => point.timestamp) || []);
         };
 
         return () => socket.close();
@@ -44,53 +42,39 @@ function MarketDashboard() {
         <div>
             <h1>Performance des Portefeuilles en Temps Réel</h1>
 
-            <h2>Devises</h2>
-            <table>
-                <thead>
-                <tr>
-                    <th>Actif</th>
-                    <th>Change (en euro)</th>
-                    <th>Variation (%)</th>
-                </tr>
-                </thead>
-                <tbody>
-                {Object.entries(marketData.forex).map(([symbol, data]) => (
-                    <tr key={symbol} onClick={() => handleAssetClick(data)}>
-                        <td>{symbol}</td>
-                        <td>{data.prices[data.prices.length - 1]?.price.toFixed(2)}</td>
-                        <td style={{ color: data.change > 0 ? 'green' : 'red' }}>
-                            {data.change ? data.change.toFixed(2) : "N/A"}%
-                        </td>
-                    </tr>
-                ))}
-                </tbody>
-            </table>
+            <div className="asset-category">
+                <h2>Devises</h2>
+                <div className="asset-grid">
+                    {Object.entries(marketData.forex).map(([symbol, data]) => (
+                        <div className="asset-card" key={symbol} onClick={() => handleAssetClick(data)}>
+                            <h3>{data.longName}</h3> {/* Affichage du longName */}
+                            <p>Change (EUR): {data.prices[data.prices.length - 1]?.price.toFixed(2)}</p>
+                            <p className={`variation ${data.change > 0 ? 'positive' : 'negative'}`}>
+                                {data.change ? data.change.toFixed(2) : "N/A"}%
+                            </p>
+                        </div>
+                    ))}
+                </div>
+            </div>
 
-            <h2>Cryptomonnaies</h2>
-            <table>
-                <thead>
-                <tr>
-                    <th>Actif</th>
-                    <th>Prix (en euro)</th>
-                    <th>Variation (%)</th>
-                </tr>
-                </thead>
-                <tbody>
-                {Object.entries(marketData.crypto).map(([symbol, data]) => (
-                    <tr key={symbol} onClick={() => handleAssetClick(data)}>
-                        <td>{symbol}</td>
-                        <td>{data.prices[data.prices.length - 1]?.price.toFixed(2)}</td>
-                        <td style={{ color: data.change > 0 ? 'green' : 'red' }}>
-                            {data.change ? data.change.toFixed(2) : "N/A"}%
-                        </td>
-                    </tr>
-                ))}
-                </tbody>
-            </table>
+            <div className="asset-category">
+                <h2>Cryptomonnaies</h2>
+                <div className="asset-grid">
+                    {Object.entries(marketData.crypto).map(([symbol, data]) => (
+                        <div className="asset-card" key={symbol} onClick={() => handleAssetClick(data)}>
+                            <h3>{data.longName}</h3> {/* Affichage du longName */}
+                            <p>Prix (EUR): {data.prices[data.prices.length - 1]?.price.toFixed(2)}</p>
+                            <p className={`variation ${data.change > 0 ? 'positive' : 'negative'}`}>
+                                {data.change ? data.change.toFixed(2) : "N/A"}%
+                            </p>
+                        </div>
+                    ))}
+                </div>
+            </div>
 
             {selectedAsset && (
-                <div>
-                    <h2>Graphique pour {selectedAsset.symbol}</h2>
+                <div className="chart-container">
+                    <h2>Graphique pour {selectedAsset.longName}</h2> {/* Affichage du longName dans le titre du graphique */}
                     <Line data={generateChartData(selectedAsset, `${selectedAsset.symbol} (${selectedAsset.assetType})`)} />
                 </div>
             )}

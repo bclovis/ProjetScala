@@ -1,13 +1,10 @@
-// MarketDataActor.scala
-import akka.actor.Actor
-import akka.actor.ActorLogging
+import akka.actor.{Actor, ActorLogging}
 import scala.concurrent.Future
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.pattern.pipe
 import akka.actor.ActorSystem
 import scala.concurrent.duration._
-
 
 class MarketDataActor extends Actor with ActorLogging {
 
@@ -53,12 +50,21 @@ class MarketDataActor extends Actor with ActorLogging {
         io.circe.parser.parse(jsonString) match {
           case Right(json) =>
             val cursor = json.hcursor
-            val timestamps = cursor.downField("chart").downField("result").downArray.downField("timestamp").as[Seq[Long]].getOrElse(Seq())
-            val openPrices = cursor.downField("chart").downField("result").downArray.downField("indicators").downField("quote").downArray.downField("open").as[Seq[Double]].getOrElse(Seq())
+            val result = cursor.downField("chart").downField("result").downArray
+
+            // Extraction des timestamps et des prix d'ouverture
+            val timestamps = result.downField("timestamp").as[Seq[Long]].getOrElse(Seq())
+            val openPrices = result.downField("indicators").downField("quote").downArray.downField("open").as[Seq[Double]].getOrElse(Seq())
+
+            // Extraction du longName
+            val longName = result.downField("meta").downField("longName").as[String].getOrElse(symbol)
+
+            // Création des points de données à partir des timestamps et prix
             val points = timestamps.zip(openPrices).collect {
               case (ts, price) if !price.isNaN && price > 0.0 => MarketPoint(ts * 1000, price)
             }.toList
 
+            // Calcul du changement de prix
             val change = if (points.length >= 2) {
               val firstPrice = points.head.price
               val lastPrice = points.last.price
@@ -67,11 +73,12 @@ class MarketDataActor extends Actor with ActorLogging {
               None
             }
 
-            MarketPrice(symbol, points, assetType, change)
+            // Retourner un objet MarketPrice avec longName, symbol, etc.
+            MarketPrice(symbol, points, assetType, change, longName)
 
           case Left(error) =>
             log.error(s"Error parsing JSON for $symbol: ${error.getMessage}")
-            MarketPrice(symbol, List(), assetType)
+            MarketPrice(symbol, List(), assetType, None, symbol) // Utilisation de symbol comme fallback pour longName en cas d'erreur
         }
       }
     }
