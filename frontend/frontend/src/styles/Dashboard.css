@@ -1,34 +1,163 @@
 /* Dashboard.css */
 
-.dashboard-wrapper {
+/* Wrapper principal du dashboard */
+.dashboard-page {
+    font-family: 'Poppins', sans-serif;
     display: flex;
-    justify-content: center;
+    flex-direction: column;
+    justify-content: flex-start;
     align-items: center;
+    padding-top: 80px; /* Décalage pour laisser de l'espace à la navbar */
+    background-color: #f4f4f4; /* Fond légèrement gris */
     min-height: 100vh;
-    background: url('../assets/interieur.jpg') no-repeat center center fixed;
-    background-size: cover; /* L'image de fond couvre toute la page */
-    padding: 20px;
-    color: #fff;
 }
 
+/* Style du header du dashboard */
+.dashboard-wrapper {
+    width: 90%;
+    max-width: 1200px;
+    padding: 30px;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    margin-bottom: 30px;
+}
+
+/* Titre principal du dashboard */
 .dashboard-wrapper h1 {
-    font-size: 36px;
+    font-size: 32px;
+    font-weight: 600;
     margin-bottom: 20px;
+    color: #2d063a;
     text-align: center;
 }
 
-.dashboard-wrapper ul {
+/* Section des portefeuilles */
+.portfolios-section {
+    margin-top: 20px;
+}
+
+.portfolios-section h2 {
+    font-size: 28px;
+    font-weight: 600;
+    color: #2d063a;
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+/* Liste des portefeuilles */
+.portfolios-section ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: center;
+}
+
+.portfolios-section li {
+    list-style: none;
+    background: #2d063a;
+    color: #fff;
+    border-radius: 12px;
+    padding: 20px 30px;
+    min-width: 200px;
+    text-align: center;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+    transition: background 0.3s, transform 0.2s;
+}
+
+.portfolios-section li:hover {
+    background: #4b226c;
+    transform: scale(1.05);
+}
+
+/* Formulaire pour créer un portefeuille */
+.create-portfolio-form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+    margin-top: 30px;
+}
+
+.create-portfolio-form input {
+    width: 80%;
+    padding: 10px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    background: transparent;
+    border-radius: 25px;
+    font-size: 16px;
+    color: #333;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.create-portfolio-form button {
+    background-color: #2d063a;
+    color: #ffb200;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 25px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.create-portfolio-form button:hover {
+    background-color: #4b226c;
+}
+
+/* Section de la courbe de performance */
+.portfolio-chart {
+    margin-top: 50px;
+    width: 100%;
+    max-width: 800px;
+    padding: 30px;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
+
+.portfolio-chart h2 {
+    font-size: 28px;
+    font-weight: 600;
+    color: #2d063a;
+    margin-bottom: 20px;
+}
+
+/* Liste des actifs d'un portefeuille */
+.portfolio-assets {
+    margin-top: 50px;
+    width: 100%;
+    max-width: 800px;
+    padding: 30px;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
+
+.portfolio-assets h3 {
+    font-size: 28px;
+    font-weight: 600;
+    color: #2d063a;
+    margin-bottom: 20px;
+}
+
+.portfolio-assets ul {
     list-style: none;
     padding: 0;
 }
 
-.dashboard-wrapper li {
+.portfolio-assets li {
+    background: #2d063a;
+    color: #fff;
+    border-radius: 8px;
+    padding: 15px;
     margin: 10px 0;
-    font-size: 18px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
-/* Ajoutez cette règle pour appliquer uniquement à l'élément wrapper de Dashboard */
-.dashboard-page .dashboard-wrapper {
-    background: url('../assets/interieur.jpg') no-repeat center center fixed;
-    background-size: cover;
+.portfolio-assets li:hover {
+    background: #4b226c;
 }

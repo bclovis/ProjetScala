@@ -1,64 +1,97 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import '../styles/Dashboard.css'; // Assurez-vous que le fichier CSS spécifique au Dashboard est importé
+import PropTypes from "prop-types";
+import PortfolioChart from "../components/PortfolioChart";
+import PortfolioAssets from "../components/PortfolioAssets";
+import "../styles/Dashboard.css";
 
 const Dashboard = () => {
     const [portfolios, setPortfolios] = useState([]);
     const [error, setError] = useState("");
+    const [selectedPortfolio, setSelectedPortfolio] = useState(null);
     const navigate = useNavigate();
+    const token = localStorage.getItem("token");
+
+    const fetchPortfolios = () => {
+        if (!token) {
+            navigate("/login");
+            return;
+        }
+        fetch("http://localhost:8080/api/portfolios", {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`,
+            },
+        })
+            .then((res) => res.json())
+            .then((data) => setPortfolios(data))
+            .catch((err) => setError(err.message));
+    };
 
     useEffect(() => {
-        const token = localStorage.getItem("token");
-        if (!token) {
-            navigate("/login"); // Si pas de token, rediriger vers la page de connexion
-        } else {
-            // Récupérer les portefeuilles de l'utilisateur à partir de l'API
-            fetch("http://localhost:8080/portfolios", {
-                method: "GET",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`, // Passer le token dans le header
-                },
-            })
-                .then((res) => res.json())
-                .then((data) => {
-                    setPortfolios(data); // Si la requête réussit, mettre à jour les portefeuilles
-                })
-                .catch((err) => setError(err.message)); // Si erreur, afficher l'erreur
-        }
-    }, [navigate]);
+        fetchPortfolios();
+    }, [navigate, token]);
+
+    // Données fictives pour la courbe de performance (à remplacer par des données réelles)
+    const sampleChartData = {
+        labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
+        data: [100, 150, 130, 170, 160, 180],
+    };
 
     return (
         <div className="dashboard-page">
             <div className="dashboard-wrapper">
                 <h1>Your Dashboard</h1>
-                {error && <p>{error}</p>}
-                <ul>
-                    {portfolios.map((portfolio) => (
-                        <li key={portfolio.id}>{portfolio.name}</li> // Afficher le nom du portefeuille
-                    ))}
-                </ul>
-                <CreatePortfolio /> {/* Ajouter un formulaire pour créer un portefeuille */}
+                {error && <p className="error">{error}</p>}
+
+                {/* Section Portefeuilles */}
+                <div className="portfolios-section">
+                    <h2>Mes portefeuilles</h2>
+                    <ul>
+                        {portfolios.map((portfolio) => (
+                            <li key={portfolio.id}>
+                                {portfolio.name}
+                                <button
+                                    onClick={() => setSelectedPortfolio(portfolio.id)}
+                                    className="view-assets-btn"
+                                >
+                                    Afficher les actifs
+                                </button>
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+
+                {/* Formulaire de création de portefeuille */}
+                <CreatePortfolio onPortfolioCreated={fetchPortfolios} />
+
+                {/* Affichage graphique de performance */}
+                <div className="portfolio-chart">
+                    <PortfolioChart chartData={sampleChartData} />
+                </div>
+
+                {/* Affichage des actifs si un portefeuille est sélectionné */}
+                {selectedPortfolio && (
+                    <PortfolioAssets portfolioId={selectedPortfolio} token={token} />
+                )}
             </div>
         </div>
     );
 };
 
-// Formulaire pour créer un nouveau portefeuille
-const CreatePortfolio = () => {
+const CreatePortfolio = ({ onPortfolioCreated }) => {
     const [name, setName] = useState("");
     const [error, setError] = useState("");
 
     const handleCreatePortfolio = async (e) => {
         e.preventDefault();
-
         const token = localStorage.getItem("token");
         if (!token) {
             setError("User is not authenticated");
             return;
         }
-
-        const response = await fetch("http://localhost:8080/portfolios", {
+        const response = await fetch("http://localhost:8080/api/portfolios", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -66,27 +99,30 @@ const CreatePortfolio = () => {
             },
             body: JSON.stringify({ name }),
         });
-
         if (!response.ok) {
             setError("Failed to create portfolio");
         } else {
-            // Rafraîchir la liste des portefeuilles ou rediriger vers le tableau de bord
-            setName(""); // Réinitialiser le champ du formulaire
+            setName("");
+            onPortfolioCreated();
         }
     };
 
     return (
-        <form onSubmit={handleCreatePortfolio}>
+        <form onSubmit={handleCreatePortfolio} className="create-portfolio-form">
             <input
                 type="text"
-                placeholder="Portfolio Name"
+                placeholder="Nom du portefeuille"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
             />
-            <button type="submit">Create Portfolio</button>
-            {error && <p>{error}</p>}
+            <button type="submit" className="button">Créer un portefeuille</button>
+            {error && <p className="error">{error}</p>}
         </form>
     );
+};
+
+CreatePortfolio.propTypes = {
+    onPortfolioCreated: PropTypes.func.isRequired,
 };
 
 export default Dashboard;
