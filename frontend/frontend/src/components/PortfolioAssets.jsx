@@ -1,4 +1,6 @@
+//frontend/src/components/PortfolioAssests.jsx
 import { useEffect, useState } from "react";
+
 import PropTypes from "prop-types";
 
 const PortfolioAssets = ({ portfolioId, token }) => {

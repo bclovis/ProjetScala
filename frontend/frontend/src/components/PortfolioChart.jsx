@@ -1,3 +1,5 @@
+//frontend/src/components/PortfolioChart.jsx
+
 import { Line } from "react-chartjs-2";
 import PropTypes from "prop-types";
 import {

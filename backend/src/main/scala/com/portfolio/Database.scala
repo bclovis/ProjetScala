@@ -1,4 +1,4 @@
-package com.example
+package com.portfolio
 
 import java.sql.{Connection, DriverManager, ResultSet}
 import scala.concurrent.{Future, ExecutionContext}

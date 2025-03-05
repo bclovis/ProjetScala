@@ -1,4 +1,4 @@
-package com.example.http
+package com.portfolio.http
 
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.scaladsl.Behaviors
@@ -10,22 +10,34 @@ import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.model.StatusCodes
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import com.example.Database
-import io.circe.generic.auto._  // Circe pour le parsing JSON
-import io.circe.parser._       // Circe pour le parsing JSON
-import io.circe.syntax._       // Circe pour convertir en JSON
+import io.circe.generic.auto._
+import io.circe.parser._
+import io.circe.syntax._
+import com.portfolio.db.repositories.{PortfolioRepository, AssetRepository}
+
+// Simple helper case classes for parsing
+case class Credentials(email: String, password: String)
+case class AssetData(assetType: String, symbol: String, quantity: BigDecimal, avgBuyPrice: BigDecimal)
 
 object HttpServer {
 
-  // Initialisation de l'ActorSystem et du Materializer
-  implicit val system: ActorSystem[Nothing] = ActorSystem(Behaviors.empty, "AkkaSystem")
+  // Database configuration (could be externalized)
+  val dbUrl = "jdbc:postgresql://localhost:5432/portfolio_db"
+  val dbUser = "elouanekoka"
+  val dbPassword = "postgres"
+
+  // Instantiate repositories
+  val portfolioRepo = new PortfolioRepository(dbUrl, dbUser, dbPassword)
+  val assetRepo = new AssetRepository(dbUrl, dbUser, dbPassword)
+
+  // Initialize ActorSystem and Materializer
+  implicit val system: akka.actor.typed.ActorSystem[Nothing] = ActorSystem(Behaviors.empty, "AkkaSystem")
   implicit val materializer: Materializer = Materializer(system)
 
   def main(args: Array[String]): Unit = {
 
     val route =
       pathPrefix("api") {
-        // Configuration CORS globale
         respondWithHeaders(
           `Access-Control-Allow-Origin`.*,
           `Access-Control-Allow-Methods`(HttpMethods.GET, HttpMethods.POST, HttpMethods.OPTIONS),
@@ -34,30 +46,30 @@ object HttpServer {
           options {
             complete(HttpResponse(StatusCodes.OK))
           } ~
-            // Endpoint pour la connexion (login)
+            // Login endpoint
             path("login") {
               post {
                 entity(as[String]) { credentialsJson =>
                   val credentials = parseCredentials(credentialsJson)
-                  onComplete(Database.checkUserCredentials(credentials.email, credentials.password)) {
+                  // TODO: Replace with real user authentication logic.
+                  onComplete(authenticate(credentials.email, credentials.password)) {
                     case scala.util.Success(isValid) =>
-                      if (isValid) {
+                      if (isValid)
                         complete(HttpResponse(StatusCodes.OK, entity = """{"token": "dummy_token"}"""))
-                      } else {
+                      else
                         complete(HttpResponse(StatusCodes.Unauthorized, entity = """{"message": "Email ou mot de passe incorrect"}"""))
-                      }
                     case scala.util.Failure(ex) =>
                       complete(HttpResponse(StatusCodes.InternalServerError, entity = s"Erreur de connexion: ${ex.getMessage}"))
                   }
                 }
               }
             } ~
-            // Endpoint GET pour récupérer les portefeuilles
+            // GET portfolios endpoint
             path("portfolios") {
               get {
                 headerValueByName("Authorization") { token =>
                   val userId = decodeUserIdFromToken(token)
-                  onComplete(Database.getPortfolios(userId)) {
+                  onComplete(portfolioRepo.getPortfolios(userId)) {
                     case scala.util.Success(portfolios) =>
                       complete(HttpResponse(StatusCodes.OK, entity = portfolios.asJson.noSpaces))
                     case scala.util.Failure(ex) =>
@@ -66,14 +78,14 @@ object HttpServer {
                 }
               }
             } ~
-            // Endpoint POST pour créer un portefeuille
+            // POST create portfolio endpoint
             path("portfolios") {
               post {
                 entity(as[String]) { portfolioJson =>
                   headerValueByName("Authorization") { token =>
                     val userId = decodeUserIdFromToken(token)
                     val portfolioName = parsePortfolioName(portfolioJson)
-                    onComplete(Database.createPortfolio(userId, portfolioName)) {
+                    onComplete(portfolioRepo.createPortfolio(userId, portfolioName)) {
                       case scala.util.Success(portfolio) =>
                         complete(HttpResponse(StatusCodes.Created, entity = portfolio.asJson.noSpaces))
                       case scala.util.Failure(ex) =>
@@ -83,12 +95,11 @@ object HttpServer {
                 }
               }
             } ~
-            // Endpoint GET pour lister les actifs d'un portefeuille
+            // GET assets for a portfolio
             path("portfolios" / IntNumber / "assets") { portfolioId =>
               get {
                 headerValueByName("Authorization") { token =>
-                  // Ici, userId n'est pas forcément utilisé pour filtrer les actifs
-                  onComplete(Database.getAssetsForPortfolio(portfolioId)) {
+                  onComplete(assetRepo.getAssetsForPortfolio(portfolioId)) {
                     case scala.util.Success(assets) =>
                       complete(HttpResponse(StatusCodes.OK, entity = assets.asJson.noSpaces))
                     case scala.util.Failure(ex) =>
@@ -97,13 +108,13 @@ object HttpServer {
                 }
               }
             } ~
-            // Endpoint POST pour ajouter un actif à un portefeuille
+            // POST add asset to a portfolio
             path("portfolios" / IntNumber / "assets") { portfolioId =>
               post {
                 entity(as[String]) { assetJson =>
                   headerValueByName("Authorization") { token =>
                     val assetData = parseAssetData(assetJson)
-                    onComplete(Database.addAssetToPortfolio(portfolioId, assetData.assetType, assetData.symbol, assetData.quantity, assetData.avgBuyPrice)) {
+                    onComplete(assetRepo.addAssetToPortfolio(portfolioId, assetData.assetType, assetData.symbol, assetData.quantity, assetData.avgBuyPrice)) {
                       case scala.util.Success(_) =>
                         complete(HttpResponse(StatusCodes.Created, entity = """{"message": "Asset added successfully"}"""))
                       case scala.util.Failure(ex) =>
@@ -116,29 +127,31 @@ object HttpServer {
         }
       }
 
-    // Démarrer le serveur HTTP
     Http().bindAndHandle(route, "localhost", 8080)
   }
 
-  // Fonction pour parser le JSON des informations d'identification
+  // Dummy authentication function (replace with real logic)
+  def authenticate(email: String, password: String): Future[Boolean] = Future {
+    // For now, accept any non-empty credentials.
+    email.nonEmpty && password.nonEmpty
+  }
+
   def parseCredentials(json: String): Credentials = {
     parse(json) match {
       case Right(jsonData) =>
         val email = jsonData.hcursor.downField("email").as[String].getOrElse("")
         val password = jsonData.hcursor.downField("password").as[String].getOrElse("")
         Credentials(email, password)
-      case Left(_) =>
-        Credentials("", "")
+      case Left(_) => Credentials("", "")
     }
   }
 
-  // Fonction pour extraire l'ID de l'utilisateur à partir du token (à adapter selon votre mécanisme d'authentification)
+  // Dummy token decoder: replace with proper JWT decoding logic
   def decodeUserIdFromToken(token: String): Int = {
-    // Exemple : décodage d'un JWT pour obtenir l'ID utilisateur
-    1 // Remplacer par le code réel de décodage du JWT
+    // In a real app, decode the JWT and extract the user ID.
+    1
   }
 
-  // Fonction pour extraire le nom du portefeuille depuis le JSON
   def parsePortfolioName(json: String): String = {
     parse(json) match {
       case Right(parsedJson) =>
@@ -147,24 +160,15 @@ object HttpServer {
     }
   }
 
-  // Fonction pour extraire les données d'un actif depuis le JSON
   def parseAssetData(json: String): AssetData = {
     parse(json) match {
       case Right(parsedJson) =>
         val assetType = parsedJson.hcursor.downField("asset_type").as[String].getOrElse("")
         val symbol = parsedJson.hcursor.downField("symbol").as[String].getOrElse("")
-        // Convertir quantity et avgBuyPrice en BigDecimal
         val quantity = parsedJson.hcursor.downField("quantity").as[BigDecimal].getOrElse(BigDecimal(0))
         val avgBuyPrice = parsedJson.hcursor.downField("avg_buy_price").as[BigDecimal].getOrElse(BigDecimal(0))
         AssetData(assetType, symbol, quantity, avgBuyPrice)
-      case Left(_) =>
-        AssetData("", "", BigDecimal(0), BigDecimal(0))
+      case Left(_) => AssetData("", "", BigDecimal(0), BigDecimal(0))
     }
   }
-
-  // Case class pour représenter les données d'un actif reçu dans la requête POST
-  case class AssetData(assetType: String, symbol: String, quantity: BigDecimal, avgBuyPrice: BigDecimal)
 }
-
-// Case class pour recevoir l'email et le mot de passe
-case class Credentials(email: String, password: String)
