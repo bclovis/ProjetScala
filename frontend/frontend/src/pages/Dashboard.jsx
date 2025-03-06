@@ -1,12 +1,19 @@
+//frontend/src/pages/Dashboard.jsx
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import PropTypes from "prop-types";
+import Header from "../components/Header";
+import Overview from "../components/Overview";
 import PortfolioChart from "../components/PortfolioChart";
 import PortfolioAssets from "../components/PortfolioAssets";
+import CreatePortfolio from "../components/CreatePortfolio";
 import "../styles/Dashboard.css";
 
 const Dashboard = () => {
     const [portfolios, setPortfolios] = useState([]);
+    const [performanceData, setPerformanceData] = useState(null);
+    const [globalBalance, setGlobalBalance] = useState(0);
+    const [accountSummary, setAccountSummary] = useState("");
+    const [notifications, setNotifications] = useState([]);
     const [error, setError] = useState("");
     const [selectedPortfolio, setSelectedPortfolio] = useState(null);
     const navigate = useNavigate();
@@ -29,100 +36,79 @@ const Dashboard = () => {
             .catch((err) => setError(err.message));
     };
 
+    // Pour l'exemple, simuler des données globales et des notifications
+    const fetchOverviewData = () => {
+        // Dans une application réelle, vous feriez une requête vers l'API pour récupérer ces informations
+        setGlobalBalance(12500.75);
+        setAccountSummary("Répartition: 60% Crypto, 30% Actions, 10% Devises");
+        setNotifications([
+            "Nouveau listing: SOL",
+            "Attention: Mise à jour de sécurité disponible"
+        ]);
+    };
+
     useEffect(() => {
         fetchPortfolios();
+        fetchOverviewData();
     }, [navigate, token]);
 
-    // Données fictives pour la courbe de performance (à remplacer par des données réelles)
-    const sampleChartData = {
-        labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
-        data: [100, 150, 130, 170, 160, 180],
-    };
+    // Sélection automatique du premier portefeuille s'il existe
+    useEffect(() => {
+        if (portfolios.length > 0 && selectedPortfolio === null) {
+            setSelectedPortfolio(portfolios[0].id);
+        }
+    }, [portfolios, selectedPortfolio]);
+
+    // Récupérer les données de performance pour le portefeuille sélectionné
+    useEffect(() => {
+        if (selectedPortfolio) {
+            fetch(`http://localhost:8080/api/portfolios/${selectedPortfolio}/performance`, {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`,
+                },
+            })
+                .then((res) => res.json())
+                .then((data) => {
+                    console.log("Données de performance reçues :", data);
+                    setPerformanceData(data);
+                })
+                .catch((err) => console.error(err));
+        }
+    }, [selectedPortfolio, token]);
 
     return (
         <div className="dashboard-page">
-            <div className="dashboard-wrapper">
-                <h1>Your Dashboard</h1>
-                {error && <p className="error">{error}</p>}
-
-                {/* Section Portefeuilles */}
-                <div className="portfolios-section">
-                    <h2>Mes portefeuilles</h2>
-                    <ul>
-                        {portfolios.map((portfolio) => (
-                            <li key={portfolio.id}>
-                                {portfolio.name}
-                                <button
-                                    onClick={() => setSelectedPortfolio(portfolio.id)}
-                                    className="view-assets-btn"
-                                >
-                                    Afficher les actifs
-                                </button>
-                            </li>
-                        ))}
-                    </ul>
+            <Header />
+            <div className="container mx-auto p-4">
+                <Overview
+                    globalBalance={globalBalance}
+                    accountSummary={accountSummary}
+                    notifications={notifications}
+                />
+                <div className="flex flex-col md:flex-row gap-4">
+                    <div className="w-full md:w-1/2">
+                        <h2 className="text-lg font-bold mb-2">Performance</h2>
+                        {performanceData ? (
+                            <PortfolioChart chartData={performanceData} />
+                        ) : (
+                            <p>Chargement des données...</p>
+                        )}
+                    </div>
+                    <div className="w-full md:w-1/2">
+                        <h2 className="text-lg font-bold mb-2">Actifs du Portefeuille</h2>
+                        {selectedPortfolio && (
+                            <PortfolioAssets portfolioId={selectedPortfolio} token={token} />
+                        )}
+                    </div>
                 </div>
-
-                {/* Formulaire de création de portefeuille */}
-                <CreatePortfolio onPortfolioCreated={fetchPortfolios} />
-
-                {/* Affichage graphique de performance */}
-                <div className="portfolio-chart">
-                    <PortfolioChart chartData={sampleChartData} />
+                <div className="mt-4">
+                    <CreatePortfolio onPortfolioCreated={fetchPortfolios} />
                 </div>
-
-                {/* Affichage des actifs si un portefeuille est sélectionné */}
-                {selectedPortfolio && (
-                    <PortfolioAssets portfolioId={selectedPortfolio} token={token} />
-                )}
             </div>
         </div>
     );
-};
-
-const CreatePortfolio = ({ onPortfolioCreated }) => {
-    const [name, setName] = useState("");
-    const [error, setError] = useState("");
-
-    const handleCreatePortfolio = async (e) => {
-        e.preventDefault();
-        const token = localStorage.getItem("token");
-        if (!token) {
-            setError("User is not authenticated");
-            return;
-        }
-        const response = await fetch("http://localhost:8080/api/portfolios", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${token}`,
-            },
-            body: JSON.stringify({ name }),
-        });
-        if (!response.ok) {
-            setError("Failed to create portfolio");
-        } else {
-            setName("");
-            onPortfolioCreated();
-        }
-    };
-
-    return (
-        <form onSubmit={handleCreatePortfolio} className="create-portfolio-form">
-            <input
-                type="text"
-                placeholder="Nom du portefeuille"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-            />
-            <button type="submit" className="button">Créer un portefeuille</button>
-            {error && <p className="error">{error}</p>}
-        </form>
-    );
-};
-
-CreatePortfolio.propTypes = {
-    onPortfolioCreated: PropTypes.func.isRequired,
 };
 
 export default Dashboard;
