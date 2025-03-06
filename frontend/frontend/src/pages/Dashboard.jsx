@@ -38,12 +38,11 @@ const Dashboard = () => {
 
     // Pour l'exemple, simuler des données globales et des notifications
     const fetchOverviewData = () => {
-        // Dans une application réelle, vous feriez une requête vers l'API pour récupérer ces informations
         setGlobalBalance(12500.75);
         setAccountSummary("Répartition: 60% Crypto, 30% Actions, 10% Devises");
         setNotifications([
             "Nouveau listing: SOL",
-            "Attention: Mise à jour de sécurité disponible"
+            "Attention: Mise à jour de sécurité disponible",
         ]);
     };
 
@@ -78,6 +77,11 @@ const Dashboard = () => {
         }
     }, [selectedPortfolio, token]);
 
+    // Fonction de redirection vers la page MarketData
+    const handleGoToMarketData = () => {
+        navigate("/market-data");
+    };
+
     return (
         <div className="dashboard-page">
             <Header />
@@ -105,6 +109,15 @@ const Dashboard = () => {
                 </div>
                 <div className="mt-4">
                     <CreatePortfolio onPortfolioCreated={fetchPortfolios} />
+                </div>
+                <div className="mt-4">
+                    {/* Bouton de redirection vers MarketData */}
+                    <button
+                        onClick={handleGoToMarketData}
+                        className="bg-green-500 text-white p-2 rounded"
+                    >
+                        Voir les Données de Marché
+                    </button>
                 </div>
             </div>
         </div>
