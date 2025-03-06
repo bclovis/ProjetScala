@@ -1,3 +1,4 @@
+//backend/src/main/scala/com/portfolio/models/MarketData.scala
 package com.portfolio.models
 
 case class MarketPoint(timestamp: Long, price: Double)
