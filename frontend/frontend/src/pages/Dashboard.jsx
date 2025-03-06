@@ -84,37 +84,40 @@ const Dashboard = () => {
 
     return (
         <div className="dashboard-page">
-            <Header />
-            <div className="container mx-auto p-4">
+            <Header/>
+            <div className="dashboard-wrapper">
                 <Overview
                     globalBalance={globalBalance}
                     accountSummary={accountSummary}
                     notifications={notifications}
                 />
-                <div className="flex flex-col md:flex-row gap-4">
-                    <div className="w-full md:w-1/2">
-                        <h2 className="text-lg font-bold mb-2">Performance</h2>
-                        {performanceData ? (
-                            <PortfolioChart chartData={performanceData} />
-                        ) : (
-                            <p>Chargement des données...</p>
-                        )}
-                    </div>
-                    <div className="w-full md:w-1/2">
-                        <h2 className="text-lg font-bold mb-2">Actifs du Portefeuille</h2>
-                        {selectedPortfolio && (
-                            <PortfolioAssets portfolioId={selectedPortfolio} token={token} />
-                        )}
+
+                <div className="portfolios-section">
+                    <h2>Portefeuille Spot</h2>
+                    <div className="portfolio-content">
+                        <div className="portfolio-chart-container">
+                            {performanceData ? (
+                                <PortfolioChart chartData={performanceData}/>
+                            ) : (
+                                <p>Chargement des données...</p>
+                            )}
+                        </div>
+                        <div className="portfolio-assets-container">
+                            {selectedPortfolio && (
+                                <PortfolioAssets portfolioId={selectedPortfolio} token={token}/>
+                            )}
+                        </div>
                     </div>
                 </div>
-                <div className="mt-4">
-                    <CreatePortfolio onPortfolioCreated={fetchPortfolios} />
+
+                <div className="create-portfolio-container">
+                    <CreatePortfolio onPortfolioCreated={fetchPortfolios}/>
                 </div>
-                <div className="mt-4">
-                    {/* Bouton de redirection vers MarketData */}
+
+                <div className="market-data-button-container">
                     <button
                         onClick={handleGoToMarketData}
-                        className="bg-green-500 text-white p-2 rounded"
+                        className="market-data-button"
                     >
                         Voir les Données de Marché
                     </button>

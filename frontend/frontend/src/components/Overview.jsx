@@ -2,6 +2,7 @@
 import React from "react";
 import PropTypes from "prop-types";
 
+
 const Overview = ({ globalBalance, accountSummary, notifications }) => {
     return (
         <div className="overview bg-white p-4 rounded shadow mb-4">

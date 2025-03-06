@@ -1,40 +1,107 @@
-/* Dashboard.css */
-
-/* Wrapper principal du dashboard */
-.dashboard-page {
+/* --- Global Styles --- */
+html, body {
+    margin: 0;
+    padding: 0;
     font-family: 'Poppins', sans-serif;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
-    align-items: center;
-    padding-top: 80px; /* Décalage pour laisser de l'espace à la navbar */
-    background-color: #f4f4f4; /* Fond légèrement gris */
-    min-height: 100vh;
+    height: 100%;
+    color: #333;
 }
 
-/* Style du header du dashboard */
+a {
+    text-decoration: none;
+    color: inherit;
+}
+
+/* --- Navbar --- */
+.navbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 70px;
+    background: #2d063a;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    z-index: 100;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.navbar .logo {
+    font-size: 24px;
+    font-weight: 700;
+    color: #ffb200;
+}
+
+.navbar .nav-links {
+    display: flex;
+    gap: 20px;
+}
+
+.navbar .nav-links a {
+    color: #ffb200;
+    font-size: 16px;
+    transition: color 0.3s;
+}
+
+.navbar .nav-links a:hover {
+    color: #ffffff;
+}
+
+/* --- Dashboard Global Layout --- */
+.dashboard-page {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    padding-top: 80px; /* Espace pour la navbar fixe */
+    background: #f4f4f4;
+}
+
 .dashboard-wrapper {
     width: 90%;
     max-width: 1200px;
-    padding: 30px;
-    background: white;
+    margin: 20px auto;
+    background: #ffffff;
     border-radius: 10px;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    padding: 30px;
+}
+
+/* --- Overview --- */
+.overview {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    background: #f9f9f9;
+    padding: 20px;
+    border-radius: 8px;
     margin-bottom: 30px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 }
 
-/* Titre principal du dashboard */
-.dashboard-wrapper h1 {
-    font-size: 32px;
-    font-weight: 600;
-    margin-bottom: 20px;
-    color: #2d063a;
+.overview .overview-item {
+    background: #fff;
+    border-radius: 8px;
+    padding: 20px;
     text-align: center;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 }
 
-/* Section des portefeuilles */
+.overview .overview-item h2 {
+    font-size: 20px;
+    margin-bottom: 10px;
+    color: #2d063a;
+}
+
+.overview .overview-item p {
+    font-size: 16px;
+}
+
+/* --- Section Portefeuille --- */
 .portfolios-section {
-    margin-top: 20px;
+    margin-top: 30px;
 }
 
 .portfolios-section h2 {
@@ -45,33 +112,24 @@
     text-align: center;
 }
 
-/* Liste des portefeuilles */
-.portfolios-section ul {
+/* Contenu portefeuille (chart + assets) */
+.portfolio-content {
     display: flex;
     flex-wrap: wrap;
     gap: 20px;
-    justify-content: center;
+    justify-content: space-around;
 }
 
-.portfolios-section li {
-    list-style: none;
-    background: #2d063a;
-    color: #fff;
-    border-radius: 12px;
-    padding: 20px 30px;
-    min-width: 200px;
-    text-align: center;
+.portfolio-chart-container,
+.portfolio-assets-container {
+    flex: 1 1 45%;
+    background: #fff;
+    padding: 20px;
+    border-radius: 8px;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    cursor: pointer;
-    transition: background 0.3s, transform 0.2s;
 }
 
-.portfolios-section li:hover {
-    background: #4b226c;
-    transform: scale(1.05);
-}
-
-/* Formulaire pour créer un portefeuille */
+/* --- Formulaire Création de Portefeuille --- */
 .create-portfolio-form {
     display: flex;
     flex-direction: column;
@@ -83,81 +141,56 @@
 .create-portfolio-form input {
     width: 80%;
     padding: 10px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    background: transparent;
+    border: 2px solid rgba(0, 0, 0, 0.1);
     border-radius: 25px;
     font-size: 16px;
-    color: #333;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
 .create-portfolio-form button {
-    background-color: #2d063a;
+    background: #2d063a;
     color: #ffb200;
-    border: none;
     padding: 10px 20px;
+    border: none;
     border-radius: 25px;
-    font-size: 16px;
     cursor: pointer;
+    font-size: 16px;
     transition: background 0.3s;
 }
 
 .create-portfolio-form button:hover {
-    background-color: #4b226c;
-}
-
-/* Section de la courbe de performance */
-.portfolio-chart {
-    margin-top: 50px;
-    width: 100%;
-    max-width: 800px;
-    padding: 30px;
-    background: #fff;
-    border-radius: 12px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    text-align: center;
-}
-
-.portfolio-chart h2 {
-    font-size: 28px;
-    font-weight: 600;
-    color: #2d063a;
-    margin-bottom: 20px;
-}
-
-/* Liste des actifs d'un portefeuille */
-.portfolio-assets {
-    margin-top: 50px;
-    width: 100%;
-    max-width: 800px;
-    padding: 30px;
-    background: #fff;
-    border-radius: 12px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    text-align: center;
-}
-
-.portfolio-assets h3 {
-    font-size: 28px;
-    font-weight: 600;
-    color: #2d063a;
-    margin-bottom: 20px;
-}
-
-.portfolio-assets ul {
-    list-style: none;
-    padding: 0;
-}
-
-.portfolio-assets li {
-    background: #2d063a;
-    color: #fff;
-    border-radius: 8px;
-    padding: 15px;
-    margin: 10px 0;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-}
-
-.portfolio-assets li:hover {
     background: #4b226c;
+}
+
+/* --- Bouton de Redirection MarketData --- */
+.market-data-button-container {
+    display: flex;
+    justify-content: center;
+    margin-top: 30px;
+}
+
+.market-data-button {
+    background: #2d063a;
+    color: #ffb200;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 25px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background 0.3s;
+}
+
+.market-data-button:hover {
+    background: #4b226c;
+}
+
+/* --- Responsive --- */
+@media (max-width: 768px) {
+    .portfolio-content {
+        flex-direction: column;
+    }
+
+    .portfolio-chart-container,
+    .portfolio-assets-container {
+        flex: 1 1 100%;
+    }
 }
