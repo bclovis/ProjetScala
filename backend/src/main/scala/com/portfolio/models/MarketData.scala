@@ -1,10 +1,17 @@
-//backend/src/main/scala/com/portfolio/models/MarketData.scala
 package com.portfolio.models
 
-import java.time.Instant
+case class MarketPoint(timestamp: Long, price: Double)
+
+case class MarketPrice(
+                        symbol: String,
+                        prices: List[MarketPoint],
+                        assetType: String,
+                        change: Option[Double],
+                        longName: String
+                      )
 
 case class MarketData(
-                       symbol: String,
-                       priceUsd: BigDecimal,
-                       time: Instant
+                       stocks: List[MarketPrice],
+                       crypto: Map[String, MarketPrice],
+                       forex: Map[String, MarketPrice]
                      )

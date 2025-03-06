@@ -1,22 +1,29 @@
-//backend/src/main/scala/com/portfolio/http/HttpServer.scala
 package com.portfolio.http
 
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.scaladsl.adapter._ // Pour convertir en système classique
+import akka.actor.typed.scaladsl.adapter._ // Pour conversion en système classique
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.model.ws.{Message, TextMessage}
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.server.Directives._
 import akka.stream.Materializer
+import akka.stream.scaladsl.{Flow, Sink, Source}
+import akka.util.Timeout
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
+import io.circe.syntax._
 import io.circe.generic.auto._
 import io.circe.parser._
-import io.circe.syntax._
 import com.portfolio.db.repositories.{PortfolioRepository, AssetRepository, PerformanceRepository, MarketDataRepository}
-import com.portfolio.streams.FinnhubStream
+import com.portfolio.actors.MarketDataActor
+import com.portfolio.models.MarketData
+import akka.actor.typed.Scheduler
+// Fix: Import receptionist
+import akka.actor.typed.receptionist.{Receptionist, ServiceKey}
 
 // Classes d'aide pour le parsing JSON
 case class Credentials(email: String, password: String)
@@ -30,19 +37,62 @@ object HttpServer {
   val dbPassword = "postgres"
 
   // Instanciation des repositories
-  val portfolioRepo = new PortfolioRepository(dbUrl, dbUser, dbPassword)
-  val assetRepo = new AssetRepository(dbUrl, dbUser, dbPassword)
+  val portfolioRepo   = new PortfolioRepository(dbUrl, dbUser, dbPassword)
+  val assetRepo       = new AssetRepository(dbUrl, dbUser, dbPassword)
   val performanceRepo = new PerformanceRepository(dbUrl, dbUser, dbPassword)
-  val marketDataRepo = new MarketDataRepository(dbUrl, dbUser, dbPassword)
+  val marketDataRepo  = new MarketDataRepository(dbUrl, dbUser, dbPassword)
 
-  // Initialisation du système typé et conversion en système classique pour Akka Streams
-  val system: ActorSystem[Any] = ActorSystem(Behaviors.empty, "AkkaSystem")
+  // Création d'un unique système d'acteurs typé avec racine
+  // FIX: Change Nothing to Any for proper variance handling
+  val rootBehavior = Behaviors.setup[Any] { context =>
+    // Création de l'acteur MarketDataActor via spawn du contexte
+    val marketDataActor = context.spawn(MarketDataActor(), "marketDataActor")
+
+    // Exposer l'acteur via une extension pour y accéder ailleurs
+    context.system.receptionist ! akka.actor.typed.receptionist.Receptionist.Register(
+      ServiceKey[MarketDataActor.Command]("marketDataActor"),
+      marketDataActor
+    )
+
+    Behaviors.empty
+  }
+
+  // FIX: Change ActorSystem type parameter from Nothing to Any
+  val system: ActorSystem[Any] = ActorSystem(rootBehavior, "AkkaSystem")
+
+  // Conversion du système typé en système classique pour HTTP
+  // Fix: Add explicit type
   implicit val classicSystem: akka.actor.ActorSystem = system.toClassic
-  implicit val materializer: Materializer = Materializer(classicSystem)
+  implicit val materializer: Materializer = Materializer(system)
+  implicit val timeout: Timeout = Timeout(5.seconds)
+  implicit val scheduler: Scheduler = system.scheduler
+
+  // Récupération de l'acteur MarketDataActor via receptionist
+  val marketDataActorKey = ServiceKey[MarketDataActor.Command]("marketDataActor")
+  var marketDataActor: Option[akka.actor.typed.ActorRef[MarketDataActor.Command]] = None
+
+  system.receptionist ! Receptionist.Subscribe(marketDataActorKey, system.systemActorOf(
+    Behaviors.receive[Receptionist.Listing] { (context, msg) =>
+      msg.serviceInstances(marketDataActorKey).headOption match {
+        case Some(actor) =>
+          marketDataActor = Some(actor)
+          context.log.info("MarketDataActor reference acquired")
+        case None =>
+          context.log.warn("MarketDataActor not found")
+      }
+      Behaviors.same
+    },
+    "marketDataActorSubscriber"
+  ))
 
   def main(args: Array[String]): Unit = {
+    // Attendre que l'acteur soit disponible avant de démarrer le serveur
+    while(marketDataActor.isEmpty) {
+      Thread.sleep(100)
+    }
 
-    val route =
+    // Endpoints REST
+    val restRoute =
       pathPrefix("api") {
         respondWithHeaders(
           `Access-Control-Allow-Origin`.*,
@@ -145,10 +195,32 @@ object HttpServer {
         }
       }
 
-    Http().bindAndHandle(route, "localhost", 8080)
+    // WebSocket pour diffuser les données de marché en temps réel via Yahoo
+    val webSocketRoute =
+      path("market-data") {
+        handleWebSocketMessages(marketDataFlow)
+      }
 
-    // Lancer le stream pour interroger Finnhub et insérer les données dans market_data
-    FinnhubStream.runStream(marketDataRepo)
+    // Combinaison des routes REST et WebSocket
+    val route = restRoute ~ webSocketRoute
+
+    // FIX: Update to the newer Http().newServerAt() API
+    Http()(classicSystem).newServerAt("localhost", 8080).bind(route)
+    println("Server started at http://localhost:8080")
+  }
+
+  // Flow WebSocket : toutes les 30 secondes, demande à MarketDataActor les données et les renvoie en JSON
+  def marketDataFlow: Flow[Message, Message, _] = {
+    val source: Source[Message, _] = Source
+      .tick(0.seconds, 30.seconds, "tick")
+      .mapAsync(1) { _ =>
+        import akka.actor.typed.scaladsl.AskPattern._
+        marketDataActor.get.ask[MarketData](ref => MarketDataActor.GetMarketData(ref))(timeout, scheduler)
+      }
+      .map { marketData: MarketData =>
+        TextMessage(marketData.asJson.noSpaces)
+      }
+    Flow.fromSinkAndSource(Sink.ignore, source)
   }
 
   // Fonction d'authentification "dummy"
