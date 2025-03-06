@@ -1,38 +1,44 @@
+//backend/src/main/scala/com/portfolio/http/HttpServer.scala
 package com.portfolio.http
 
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.scaladsl.adapter._ // Pour convertir en système classique
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.server.Directives._
 import akka.stream.Materializer
-import akka.http.scaladsl.model.headers._
-import akka.http.scaladsl.model.StatusCodes
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import scala.concurrent.ExecutionContext.Implicits.global
 import io.circe.generic.auto._
 import io.circe.parser._
 import io.circe.syntax._
-import com.portfolio.db.repositories.{PortfolioRepository, AssetRepository}
+import com.portfolio.db.repositories.{PortfolioRepository, AssetRepository, PerformanceRepository, MarketDataRepository}
+import com.portfolio.streams.FinnhubStream
 
-// Simple helper case classes for parsing
+// Classes d'aide pour le parsing JSON
 case class Credentials(email: String, password: String)
 case class AssetData(assetType: String, symbol: String, quantity: BigDecimal, avgBuyPrice: BigDecimal)
 
 object HttpServer {
 
-  // Database configuration (could be externalized)
+  // Configuration de la base de données
   val dbUrl = "jdbc:postgresql://localhost:5432/portfolio_db"
   val dbUser = "elouanekoka"
   val dbPassword = "postgres"
 
-  // Instantiate repositories
+  // Instanciation des repositories
   val portfolioRepo = new PortfolioRepository(dbUrl, dbUser, dbPassword)
   val assetRepo = new AssetRepository(dbUrl, dbUser, dbPassword)
+  val performanceRepo = new PerformanceRepository(dbUrl, dbUser, dbPassword)
+  val marketDataRepo = new MarketDataRepository(dbUrl, dbUser, dbPassword)
 
-  // Initialize ActorSystem and Materializer
-  implicit val system: akka.actor.typed.ActorSystem[Nothing] = ActorSystem(Behaviors.empty, "AkkaSystem")
-  implicit val materializer: Materializer = Materializer(system)
+  // Initialisation du système typé et conversion en système classique pour Akka Streams
+  val system: ActorSystem[Any] = ActorSystem(Behaviors.empty, "AkkaSystem")
+  implicit val classicSystem: akka.actor.ActorSystem = system.toClassic
+  implicit val materializer: Materializer = Materializer(classicSystem)
 
   def main(args: Array[String]): Unit = {
 
@@ -46,12 +52,11 @@ object HttpServer {
           options {
             complete(HttpResponse(StatusCodes.OK))
           } ~
-            // Login endpoint
+            // Endpoint de connexion (login)
             path("login") {
               post {
                 entity(as[String]) { credentialsJson =>
                   val credentials = parseCredentials(credentialsJson)
-                  // TODO: Replace with real user authentication logic.
                   onComplete(authenticate(credentials.email, credentials.password)) {
                     case scala.util.Success(isValid) =>
                       if (isValid)
@@ -64,7 +69,7 @@ object HttpServer {
                 }
               }
             } ~
-            // GET portfolios endpoint
+            // GET des portefeuilles
             path("portfolios") {
               get {
                 headerValueByName("Authorization") { token =>
@@ -78,7 +83,7 @@ object HttpServer {
                 }
               }
             } ~
-            // POST create portfolio endpoint
+            // POST création d'un portefeuille
             path("portfolios") {
               post {
                 entity(as[String]) { portfolioJson =>
@@ -95,7 +100,7 @@ object HttpServer {
                 }
               }
             } ~
-            // GET assets for a portfolio
+            // GET des actifs d'un portefeuille
             path("portfolios" / IntNumber / "assets") { portfolioId =>
               get {
                 headerValueByName("Authorization") { token =>
@@ -108,7 +113,7 @@ object HttpServer {
                 }
               }
             } ~
-            // POST add asset to a portfolio
+            // POST ajout d'un actif dans un portefeuille
             path("portfolios" / IntNumber / "assets") { portfolioId =>
               post {
                 entity(as[String]) { assetJson =>
@@ -123,16 +128,31 @@ object HttpServer {
                   }
                 }
               }
+            } ~
+            // GET des données de performance d'un portefeuille
+            path("portfolios" / IntNumber / "performance") { portfolioId =>
+              get {
+                headerValueByName("Authorization") { token =>
+                  onComplete(performanceRepo.getPerformanceData(portfolioId)) {
+                    case scala.util.Success(perfData) =>
+                      complete(HttpResponse(StatusCodes.OK, entity = perfData.asJson.noSpaces))
+                    case scala.util.Failure(ex) =>
+                      complete(HttpResponse(StatusCodes.InternalServerError, entity = s"Erreur: ${ex.getMessage}"))
+                  }
+                }
+              }
             }
         }
       }
 
     Http().bindAndHandle(route, "localhost", 8080)
+
+    // Lancer le stream pour interroger Finnhub et insérer les données dans market_data
+    FinnhubStream.runStream(marketDataRepo)
   }
 
-  // Dummy authentication function (replace with real logic)
+  // Fonction d'authentification "dummy"
   def authenticate(email: String, password: String): Future[Boolean] = Future {
-    // For now, accept any non-empty credentials.
     email.nonEmpty && password.nonEmpty
   }
 
@@ -146,11 +166,8 @@ object HttpServer {
     }
   }
 
-  // Dummy token decoder: replace with proper JWT decoding logic
-  def decodeUserIdFromToken(token: String): Int = {
-    // In a real app, decode the JWT and extract the user ID.
-    1
-  }
+  // Dummy token decoder (à remplacer par une vraie logique de décodage JWT)
+  def decodeUserIdFromToken(token: String): Int = 1
 
   def parsePortfolioName(json: String): String = {
     parse(json) match {

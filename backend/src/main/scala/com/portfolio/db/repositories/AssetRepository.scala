@@ -1,3 +1,4 @@
+//backend/src/main/scala/com/portfolio/db/repositories/AssetRepository.scala
 package com.portfolio.db.repositories
 
 import com.portfolio.models.Asset
