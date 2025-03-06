@@ -1,190 +1,106 @@
-/* MarketData.css - Thème futuriste avec effet de verre et couleurs harmonisées */
+/* MarketData.css */
 
-@import url("https://fonts.googleapis.com/css2?family=Roboto:wght@400;600;700&display=swap");
-
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+/* Conteneur principal de la page MarketData */
+.market-dashboard {
+    width: 90%;
+    max-width: 1200px;
+    margin: 80px auto 20px; /* marge supérieure pour tenir compte de la navbar fixe */
+    background: #ffffff;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
-body {
-    font-family: 'Poppins', sans-serif;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    align-content: center;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    background: linear-gradient(135deg, #2d063a, #7a1fa2);
-    background: url('../assets/portfolio_db.jpg') no-repeat;
-    background-size: cover;
-    background-blend-mode: overlay;
-    color: #fff;
-    padding: 20px;
-}
-
-h1 {
+/* Titre principal */
+.market-dashboard h1 {
+    font-size: 32px;
+    font-weight: 600;
+    color: #2d063a;
     text-align: center;
-    font-size: 36px;
-    color: #ffb200;
-    text-shadow: 0 0 15px rgba(255, 178, 0, 0.8);
+    margin-bottom: 20px;
 }
 
-h2 {
-    color: #b56eff;
-    border-bottom: 2px solid #b56eff;
-    padding-bottom: 5px;
-}
-
-/* Conteneur d'actifs */
+/* Catégories d'actifs (ex. Devises, Cryptomonnaies) */
 .asset-category {
-    margin-top: 40px;
+    margin-bottom: 40px;
 }
 
 .asset-category h2 {
-    font-size: 1.8em;
-    margin-bottom: 15px;
-    color: #b56eff;
+    font-size: 28px;
+    font-weight: 600;
+    color: #2d063a;
+    margin-bottom: 20px;
+    text-align: center;
 }
 
-/* Grille d'actifs */
+/* Grille pour disposer les cartes d'actifs */
 .asset-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
     gap: 20px;
 }
 
+/* Carte pour chaque actif */
 .asset-card {
-    background: rgba(0, 0, 0, 0.4);
-    backdrop-filter: blur(10px); /* Effet de verre */
-    border-radius: 12px;
-    box-shadow: 0 4px 15px rgba(181, 110, 255, 0.4);
+    background: #f9f9f9;
+    border-radius: 8px;
     padding: 20px;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    text-align: center;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s, background 0.3s;
     cursor: pointer;
 }
 
 .asset-card:hover {
+    background: #ececec;
     transform: translateY(-5px);
-    box-shadow: 0 6px 20px rgba(181, 110, 255, 0.6);
 }
 
+/* Titre et informations de la carte */
 .asset-card h3 {
-    font-size: 1.4em;
-    color: #ffb200;
+    font-size: 20px;
+    color: #2d063a;
     margin-bottom: 10px;
 }
 
 .asset-card p {
-    font-size: 1.1em;
-    margin-bottom: 10px;
-    color: #fff;
+    font-size: 16px;
+    margin: 5px 0;
 }
 
-.variation {
+/* Mise en forme pour la variation (positif / négatif) */
+.asset-card .variation {
     font-weight: bold;
 }
 
-.variation.positive {
-    color: green;
+.asset-card .variation.positive {
+    color: #28a745;
 }
 
-.variation.negative {
-    color: red;
+.asset-card .variation.negative {
+    color: #dc3545;
 }
 
-/* Conteneur du graphique avec fond futuriste */
+/* Container pour le graphique d'un actif sélectionné */
 .chart-container {
-    margin: 30px auto;
+    margin-top: 40px;
+    background: #ffffff;
     padding: 20px;
-    background: linear-gradient(135deg, rgba(30, 7, 59, 0.8), rgba(122, 31, 162, 0.6)); /* Dégradé futuriste */
     border-radius: 10px;
-    box-shadow: 0 2px 15px rgba(181, 110, 255, 0.5);
-    backdrop-filter: blur(10px); /* Effet de verre */
-    width: 90%;
-    max-width: 800px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
-/* Scrollbar discrète */
-::-webkit-scrollbar {
-    width: 8px;
-}
-
-::-webkit-scrollbar-thumb {
-    background: linear-gradient(45deg, #b56eff, #ffb200);
-    border-radius: 10px;
-}
-
-::-webkit-scrollbar-track {
-    background: rgba(0, 0, 0, 0.3);
-}
-
-/* Boutons et liens */
-button, a {
-    background: linear-gradient(135deg, #2d063a, #7a1fa2);
-    color: #ffb200;
-    padding: 10px 20px;
-    border: none;
-    border-radius: 25px;
-    box-shadow: 0 2px 10px rgba(255, 178, 0, 0.4);
-    transition: background 0.3s ease, box-shadow 0.3s ease;
-}
-
-button:hover, a:hover {
-    background: linear-gradient(135deg, #b56eff, #ffb200);
-    box-shadow: 0 2px 15px rgba(181, 110, 255, 0.6);
-}
-
-/* Animation d’apparition légère */
-.fade-in {
-    animation: fadeIn 0.5s ease;
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-}
-
-/* Responsivité */
-@media (max-width: 768px) {
-    .asset-card {
-        padding: 15px;
-    }
-
-    .chart-container {
-        padding: 15px;
-    }
-
-    h1 {
-        font-size: 30px;
-    }
-
-    h2 {
-        font-size: 1.5em;
-    }
-
-    .asset-card h3 {
-        font-size: 1.2em;
-    }
-}
-
-/* Ajustements pour le wrapper */
-.wrapper {
-    width: 90%;
-    max-width: 900px;
-    background: rgba(0, 0, 0, 0.4);
-    border: 2px solid rgba(255, 255, 255, 0.2);
-    backdrop-filter: blur(20px);
-    border-radius: 10px;
-    padding: 30px 40px;
-    box-shadow: 0 4px 15px rgba(181, 110, 255, 0.4);
-    margin: 0 auto;
-}
-
-.wrapper h1 {
-    font-size: 36px;
+.chart-container h2 {
+    font-size: 28px;
+    font-weight: 600;
+    color: #2d063a;
     margin-bottom: 20px;
+    text-align: center;
 }
 
-/* Prêt à briller ! 🌟 */
+/* Responsive : ajustement pour les petits écrans */
+@media (max-width: 768px) {
+    .asset-grid {
+        grid-template-columns: 1fr;
+    }
+}
