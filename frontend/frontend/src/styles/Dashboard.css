@@ -55,7 +55,7 @@ a {
     flex-direction: column;
     align-items: center;
     min-height: 100vh;
-    padding-top: 80px; /* Espace pour la navbar fixe */
+    padding-top: 70px; /* Espace pour la navbar fixe */
     background: #f4f4f4;
 }
 
@@ -112,21 +112,39 @@ a {
     text-align: center;
 }
 
-/* Contenu portefeuille (chart + assets) */
+/* --- Contenu portefeuille (chart + assets) --- */
 .portfolio-content {
     display: flex;
-    flex-wrap: wrap;
-    gap: 20px;
-    justify-content: space-around;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-top: 20px;
+    gap: 20px; /* Espacement entre les cartes */
+    flex-wrap: nowrap; /* Pas de retour à la ligne */
 }
 
 .portfolio-chart-container,
 .portfolio-assets-container {
-    flex: 1 1 45%;
+    flex: 1 1 45%; /* Chaque carte prend 45% de la largeur */
     background: #fff;
     padding: 20px;
     border-radius: 8px;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* --- Section MarketData --- */
+.market-data-section {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 20px; /* Collé directement sous le Header */
+    gap: 20px;
+    padding: 20px 0;
+    width: 100%;
+}
+
+.asset-category {
+    display: flex;
+    gap: 10px; /* Espacement entre les cartes */
+    overflow-x: auto; /* Permet un défilement horizontal */
 }
 
 /* --- Formulaire Création de Portefeuille --- */
@@ -187,10 +205,19 @@ a {
 @media (max-width: 768px) {
     .portfolio-content {
         flex-direction: column;
+        gap: 10px; /* Moins d'espace entre les cartes sur petits écrans */
     }
 
     .portfolio-chart-container,
     .portfolio-assets-container {
         flex: 1 1 100%;
+    }
+
+    .market-data-section {
+        flex-direction: column;
+    }
+
+    .asset-category {
+        flex-direction: column;
     }
 }

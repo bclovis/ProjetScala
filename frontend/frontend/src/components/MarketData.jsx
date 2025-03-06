@@ -8,6 +8,8 @@ ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, T
 function MarketDashboard() {
     const [marketData, setMarketData] = useState({ stocks: [], crypto: {}, forex: {} });
     const [selectedAsset, setSelectedAsset] = useState(null);
+    const [selectedCategory, setSelectedCategory] = useState('crypto'); // Catégorie par défaut (crypto)
+    const [isGraphVisible, setIsGraphVisible] = useState(false); // Nouveau state pour basculer entre la carte et le graphique
 
     useEffect(() => {
         const socket = new WebSocket('ws://localhost:8080/market-data');
@@ -34,50 +36,101 @@ function MarketDashboard() {
         }],
     });
 
+    // Options pour masquer la légende et les valeurs des abscisses
+    const chartOptions = {
+        responsive: true,
+        plugins: {
+            legend: {
+                display: false,  // Masquer la légende
+            },
+        },
+        scales: {
+            x: {
+                display: false,  // Masquer les valeurs sur l'axe des abscisses
+            },
+        },
+    };
+
     const handleAssetClick = (asset) => {
-        setSelectedAsset(asset);
+        if (selectedAsset === asset) {
+            // Si l'actif est déjà sélectionné, alterne l'affichage entre la carte et le graphique
+            setIsGraphVisible(!isGraphVisible);
+        } else {
+            // Sinon, sélectionne un nouvel actif et affiche son graphique
+            setSelectedAsset(asset);
+            setIsGraphVisible(true);
+        }
+    };
+
+    const handleCategoryChange = (category) => {
+        setSelectedCategory(category);
+        setSelectedAsset(null); // Réinitialiser la sélection d'actif lors du changement de catégorie
+        setIsGraphVisible(false); // Masquer le graphique si on change de catégorie
+    };
+
+    // Fonction pour obtenir les données de la catégorie sélectionnée
+    const getCategoryData = () => {
+        if (selectedCategory === 'crypto') {
+            return marketData.crypto;
+        } else if (selectedCategory === 'forex') {
+            return marketData.forex;
+        } else {
+            return marketData.stocks;
+        }
     };
 
     return (
-        <div>
-            <h1>Performance des Portefeuilles en Temps Réel</h1>
+        <div className="market-dashboard">
+            <div className="category-selector-container">
+                <div className="category-selector">
+                    <button
+                        className={selectedCategory === 'stocks' ? 'selected' : ''}
+                        onClick={() => handleCategoryChange('stocks')}
+                    >
+                        Actions
+                    </button>
+                    <button
+                        className={selectedCategory === 'crypto' ? 'selected' : ''}
+                        onClick={() => handleCategoryChange('crypto')}
+                    >
+                        Cryptomonnaies
+                    </button>
+                    <button
+                        className={selectedCategory === 'forex' ? 'selected' : ''}
+                        onClick={() => handleCategoryChange('forex')}
+                    >
+                        Devises
+                    </button>
+                </div>
+            </div>
 
-            <div className="asset-category">
-                <h2>Devises</h2>
-                <div className="asset-grid">
-                    {Object.entries(marketData.forex).map(([symbol, data]) => (
+            {/* Conteneur des cartes */}
+            <div className="cards-container">
+                <div className="scroll-container">
+                    {Object.entries(getCategoryData()).map(([symbol, data]) => (
                         <div className="asset-card" key={symbol} onClick={() => handleAssetClick(data)}>
-                            <h3>{data.longName}</h3> {/* Affichage du longName */}
-                            <p>Change (EUR): {data.prices[data.prices.length - 1]?.price.toFixed(2)}</p>
-                            <p className={`variation ${data.change > 0 ? 'positive' : 'negative'}`}>
-                                {data.change ? data.change.toFixed(2) : "N/A"}%
-                            </p>
+                            {isGraphVisible && selectedAsset === data ? (
+                                <div className="chart-container" style={{ width: '200px', height: '150px' }}>
+                                    <Line
+                                        data={generateChartData(data, `${data.symbol} (${data.assetType})`)}
+                                        options={chartOptions} // Appliquer les options pour masquer la légende et les valeurs d'abscisse
+                                        width={200}  // Largeur du graphique
+                                        height={150} // Hauteur du graphique
+                                    />
+                                </div>
+                            ) : (
+                                <>
+                                    <h3>{data.longName || symbol}</h3>
+                                    <p>Prix (en Dollars): {data.prices[data.prices.length - 1]?.price.toFixed(2)}</p>
+                                    <p className={`variation ${data.change > 0 ? 'positive' : 'negative'}`}>
+                                        {data.change ? data.change.toFixed(2) : "N/A"}%
+                                    </p>
+                                </>
+                            )}
                         </div>
                     ))}
                 </div>
             </div>
-
-            <div className="asset-category">
-                <h2>Cryptomonnaies</h2>
-                <div className="asset-grid">
-                    {Object.entries(marketData.crypto).map(([symbol, data]) => (
-                        <div className="asset-card" key={symbol} onClick={() => handleAssetClick(data)}>
-                            <h3>{data.longName}</h3> {/* Affichage du longName */}
-                            <p>Prix (EUR): {data.prices[data.prices.length - 1]?.price.toFixed(2)}</p>
-                            <p className={`variation ${data.change > 0 ? 'positive' : 'negative'}`}>
-                                {data.change ? data.change.toFixed(2) : "N/A"}%
-                            </p>
-                        </div>
-                    ))}
-                </div>
-            </div>
-
-            {selectedAsset && (
-                <div className="chart-container">
-                    <h2>Graphique pour {selectedAsset.longName}</h2> {/* Affichage du longName dans le titre du graphique */}
-                    <Line data={generateChartData(selectedAsset, `${selectedAsset.symbol} (${selectedAsset.assetType})`)} />
-                </div>
-            )}
         </div>
     );
 }

@@ -1,4 +1,3 @@
-//frontend/src/pages/Dashboard.jsx
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "../components/Header";
@@ -6,6 +5,7 @@ import Overview from "../components/Overview";
 import PortfolioChart from "../components/PortfolioChart";
 import PortfolioAssets from "../components/PortfolioAssets";
 import CreatePortfolio from "../components/CreatePortfolio";
+import MarketData from "../components/MarketData"; // Importer le composant de MarketData
 import "../styles/Dashboard.css";
 
 const Dashboard = () => {
@@ -16,6 +16,7 @@ const Dashboard = () => {
     const [notifications, setNotifications] = useState([]);
     const [error, setError] = useState("");
     const [selectedPortfolio, setSelectedPortfolio] = useState(null);
+    const [marketData, setMarketData] = useState({ stocks: [], crypto: {}, forex: {} }); // État pour les données du marché en temps réel
     const navigate = useNavigate();
     const token = localStorage.getItem("token");
 
@@ -45,6 +46,19 @@ const Dashboard = () => {
             "Attention: Mise à jour de sécurité disponible",
         ]);
     };
+
+    // Connexion WebSocket pour récupérer les données de marché en temps réel
+    useEffect(() => {
+        const socket = new WebSocket('ws://localhost:8080/market-data');
+
+        socket.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            console.log('Données de marché reçues :', data);
+            setMarketData(data);
+        };
+
+        return () => socket.close();
+    }, []);
 
     useEffect(() => {
         fetchPortfolios();
@@ -84,7 +98,9 @@ const Dashboard = () => {
 
     return (
         <div className="dashboard-page">
-            <Header/>
+            <Header />
+            <MarketData marketData={marketData} />
+
             <div className="dashboard-wrapper">
                 <Overview
                     globalBalance={globalBalance}
@@ -92,26 +108,23 @@ const Dashboard = () => {
                     notifications={notifications}
                 />
 
-                <div className="portfolios-section">
-                    <h2>Portefeuille Spot</h2>
-                    <div className="portfolio-content">
-                        <div className="portfolio-chart-container">
-                            {performanceData ? (
-                                <PortfolioChart chartData={performanceData}/>
-                            ) : (
-                                <p>Chargement des données...</p>
-                            )}
-                        </div>
-                        <div className="portfolio-assets-container">
-                            {selectedPortfolio && (
-                                <PortfolioAssets portfolioId={selectedPortfolio} token={token}/>
-                            )}
-                        </div>
+                <div className="portfolio-content">
+                    <div className="portfolio-chart-container">
+                        {performanceData ? (
+                            <PortfolioChart chartData={performanceData} />
+                        ) : (
+                            <p>Chargement des données...</p>
+                        )}
+                    </div>
+                    <div className="portfolio-assets-container">
+                        {selectedPortfolio && (
+                            <PortfolioAssets portfolioId={selectedPortfolio} token={token} />
+                        )}
                     </div>
                 </div>
 
                 <div className="create-portfolio-container">
-                    <CreatePortfolio onPortfolioCreated={fetchPortfolios}/>
+                    <CreatePortfolio onPortfolioCreated={fetchPortfolios} />
                 </div>
 
                 <div className="market-data-button-container">
