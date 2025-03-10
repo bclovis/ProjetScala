@@ -1,9 +1,10 @@
+//frontend/src/components/Header.jsx
 import '../styles/Header.css'; // Importer le CSS pour le Header
 
 const Header = () => {
     return (
         <header className="header">
-            <div className="logo">Mon Dashboard</div>
+            <div className="logo"></div>
             <div className="nav-links">
                 <a href="/buy-crypto">Buy Crypto</a>
                 <a href="/buy-action">Buy Action</a>
