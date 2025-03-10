@@ -5,7 +5,7 @@ services:
     image: postgres:latest
     container_name: postgres_db
     environment:
-      POSTGRES_USER: postgres
+      POSTGRES_USER: elouanekoka
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: projet_scala
     ports:

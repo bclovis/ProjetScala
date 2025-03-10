@@ -25,6 +25,7 @@ import com.portfolio.models.MarketData
 import akka.actor.typed.Scheduler
 // Fix: Import receptionist
 import akka.actor.typed.receptionist.{Receptionist, ServiceKey}
+import com.portfolio.services.BalanceService
 
 // Classes d'aide pour le parsing JSON
 case class Credentials(email: String, password: String)
@@ -42,6 +43,7 @@ object HttpServer {
   val assetRepo       = new AssetRepository(dbUrl, dbUser, dbPassword)
   val performanceRepo = new PerformanceRepository(dbUrl, dbUser, dbPassword)
   val marketDataRepo  = new MarketDataRepository(dbUrl, dbUser, dbPassword)
+
 
   // Création d'un unique système d'acteurs typé avec racine
   // FIX: Change Nothing to Any for proper variance handling
@@ -67,6 +69,9 @@ object HttpServer {
   implicit val materializer: Materializer = Materializer(system)
   implicit val timeout: Timeout = Timeout(5.seconds)
   implicit val scheduler: Scheduler = system.scheduler
+
+  val balanceService = new BalanceService(portfolioRepo, assetRepo)(classicSystem, system.executionContext)
+
 
   // Récupération de l'acteur MarketDataActor via receptionist
   val marketDataActorKey = ServiceKey[MarketDataActor.Command]("marketDataActor")
@@ -187,6 +192,19 @@ object HttpServer {
                   onComplete(performanceRepo.getPerformanceData(portfolioId)) {
                     case scala.util.Success(perfData) =>
                       complete(HttpResponse(StatusCodes.OK, entity = perfData.asJson.noSpaces))
+                    case scala.util.Failure(ex) =>
+                      complete(HttpResponse(StatusCodes.InternalServerError, entity = s"Erreur: ${ex.getMessage}"))
+                  }
+                }
+              }
+            } ~
+            path("global-balance") {
+              get {
+                headerValueByName("Authorization") { token =>
+                  val userId = decodeUserIdFromToken(token)
+                  onComplete(balanceService.calculateGlobalBalance(userId)) {
+                    case scala.util.Success(balance) =>
+                      complete(HttpResponse(StatusCodes.OK, entity = s"""{"globalBalance": "$balance"}"""))
                     case scala.util.Failure(ex) =>
                       complete(HttpResponse(StatusCodes.InternalServerError, entity = s"Erreur: ${ex.getMessage}"))
                   }

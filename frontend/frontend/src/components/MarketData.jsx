@@ -41,8 +41,6 @@ function MarketDashboard() {
 
     return (
         <div>
-            <h1>Performance des Portefeuilles en Temps Réel</h1>
-
             <div className="asset-category">
                 <h2>Devises</h2>
                 <div className="asset-grid">
