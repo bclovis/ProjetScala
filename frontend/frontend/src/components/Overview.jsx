@@ -1,5 +1,4 @@
 //frontend/src/components/Overview.jsx
-import React from "react";
 import PropTypes from "prop-types";
 
 
@@ -9,7 +8,7 @@ const Overview = ({ globalBalance, accountSummary, notifications }) => {
             <div className="flex justify-between">
                 <div>
                     <h2 className="text-xl font-bold">Solde Global</h2>
-                    <p className="text-2xl">${globalBalance ? globalBalance.toFixed(2) : "0.00"}</p>
+                    <p className="text-2xl">{globalBalance ? globalBalance.toFixed(2) : "0.00"} €</p>
                 </div>
                 <div>
                     <h2 className="text-xl font-bold">Résumé du Compte</h2>

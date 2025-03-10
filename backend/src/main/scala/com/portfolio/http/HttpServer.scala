@@ -23,6 +23,7 @@ import com.portfolio.db.repositories.{PortfolioRepository, AssetRepository, Perf
 import com.portfolio.actors.MarketDataActor
 import com.portfolio.models.MarketData
 import akka.actor.typed.Scheduler
+import com.portfolio.services.AccountSummaryService
 // Fix: Import receptionist
 import akka.actor.typed.receptionist.{Receptionist, ServiceKey}
 import com.portfolio.services.BalanceService
@@ -71,7 +72,7 @@ object HttpServer {
   implicit val scheduler: Scheduler = system.scheduler
 
   val balanceService = new BalanceService(portfolioRepo, assetRepo)(classicSystem, system.executionContext)
-
+  val accountSummaryService = new AccountSummaryService(portfolioRepo, assetRepo)(classicSystem, system.executionContext)
 
   // Récupération de l'acteur MarketDataActor via receptionist
   val marketDataActorKey = ServiceKey[MarketDataActor.Command]("marketDataActor")
@@ -205,6 +206,19 @@ object HttpServer {
                   onComplete(balanceService.calculateGlobalBalance(userId)) {
                     case scala.util.Success(balance) =>
                       complete(HttpResponse(StatusCodes.OK, entity = s"""{"globalBalance": "$balance"}"""))
+                    case scala.util.Failure(ex) =>
+                      complete(HttpResponse(StatusCodes.InternalServerError, entity = s"Erreur: ${ex.getMessage}"))
+                  }
+                }
+              }
+            } ~
+            path("account-summary") {
+              get {
+                headerValueByName("Authorization") { token =>
+                  val userId = decodeUserIdFromToken(token)
+                  onComplete(accountSummaryService.calculateAccountSummary(userId)) {
+                    case scala.util.Success(summary) =>
+                      complete(HttpResponse(StatusCodes.OK, entity = summary.asJson.noSpaces))
                     case scala.util.Failure(ex) =>
                       complete(HttpResponse(StatusCodes.InternalServerError, entity = s"Erreur: ${ex.getMessage}"))
                   }

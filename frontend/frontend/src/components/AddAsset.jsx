@@ -5,7 +5,6 @@ const AddAsset = ({ portfolioId, token, onAssetAdded }) => {
     const [assetType, setAssetType] = useState("");
     const [symbol, setSymbol] = useState("");
     const [quantity, setQuantity] = useState("");
-    const [avgBuyPrice, setAvgBuyPrice] = useState("");
     const [error, setError] = useState("");
 
     const handleSubmit = async (e) => {
@@ -13,8 +12,7 @@ const AddAsset = ({ portfolioId, token, onAssetAdded }) => {
         const assetData = {
             asset_type: assetType,
             symbol,
-            quantity: parseFloat(quantity),
-            avg_buy_price: parseFloat(avgBuyPrice)
+            quantity: parseFloat(quantity)
         };
 
         try {
@@ -34,7 +32,6 @@ const AddAsset = ({ portfolioId, token, onAssetAdded }) => {
                 setAssetType("");
                 setSymbol("");
                 setQuantity("");
-                setAvgBuyPrice("");
                 setError("");
                 onAssetAdded && onAssetAdded();
             }
@@ -72,16 +69,6 @@ const AddAsset = ({ portfolioId, token, onAssetAdded }) => {
                     placeholder="Quantité"
                     value={quantity}
                     onChange={(e) => setQuantity(e.target.value)}
-                    className="border p-2 rounded w-full"
-                    required
-                />
-            </div>
-            <div className="mb-2">
-                <input
-                    type="number"
-                    placeholder="Prix d'achat moyen"
-                    value={avgBuyPrice}
-                    onChange={(e) => setAvgBuyPrice(e.target.value)}
                     className="border p-2 rounded w-full"
                     required
                 />
