@@ -1,5 +1,4 @@
 //frontend/src/components/Header.jsx
-import '../styles/Header.css'; // Importer le CSS pour le Header
 
 const Header = () => {
     return (

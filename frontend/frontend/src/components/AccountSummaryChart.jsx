@@ -1,6 +1,9 @@
+//frontend/src/components/AccountSummaryChart.jsx.jsx
+
 import React from "react";
 import { Pie } from "react-chartjs-2";
 import PropTypes from "prop-types";
+
 import {
     Chart as ChartJS,
     ArcElement,
