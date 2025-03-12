@@ -7,6 +7,7 @@ import PortfolioAssets from "../components/PortfolioAssets";
 import PortfolioList from "../components/PortfolioList";
 import AccountSummaryChart from "../components/AccountSummaryChart";
 import TransactionHistory from "../components/TransactionHistory";
+import MarketDashboard from "../components/MarketData"; // Import pour le dashboard des marchés
 
 import "../styles/Dashboard.css";
 
@@ -145,9 +146,8 @@ const Dashboard = () => {
 
     // Définition du grid template areas pour les grands écrans
     const gridTemplateLargeScreens = `
+        "c c"
         "a b"
-        "d b"
-        "d b"
         "d b"
     `;
     const gridStyle = {
@@ -226,6 +226,10 @@ const Dashboard = () => {
                             </button>
                         </div>
                     </div>
+                </div>
+                {/* Zone C: Données de Marché */}
+                <div style={{ gridArea: "c", background: "#c0c0c0", padding: "10px" }}>
+                    <MarketDashboard marketData={performanceData} />
                 </div>
                 {/* Zone D : Actualités */}
                 <div style={{ gridArea: "d", background: "#b0b0b0", padding: "10px" }}>

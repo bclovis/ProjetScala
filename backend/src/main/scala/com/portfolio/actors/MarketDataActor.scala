@@ -40,9 +40,9 @@ object MarketDataActor {
 
   def fetchMarketData(context: ActorContext[Command])
                      (implicit ec: ExecutionContext, mat: Materializer): Future[MarketData] = {
-    val stockSymbols  = List("AAPL", "GOOGL")
-    val cryptoSymbols = List("BTC-EUR", "ETH-EUR", "ADA-EUR", "XRP-EUR", "SOL-EUR", "LTC-EUR", "DOGE-EUR", "BNB-EUR", "MATIC-EUR", "DOT-EUR")
-    val forexSymbols  = List("USDEUR=X", "GBPEUR=X", "JPYEUR=X", "CHFEUR=X", "CADEUR=X", "AUDEUR=X", "NZDEUR=X", "SEKEUR=X")
+    val stockSymbols = List("AAPL", "GOOGL", "AMZN", "MSFT", "TSLA", "META", "NVDA", "NFLX")
+    val cryptoSymbols = List("BTC-USD", "ETH-USD", "ADA-USD", "XRP-USD", "SOL-USD", "LTC-USD", "DOGE-USD", "BNB-USD", "MATIC-USD", "DOT-USD")
+    val forexSymbols  = List("EURUSD=X", "GBPUSD=X", "JPYUSD=X", "CHFUSD=X", "CADUSD=X", "AUDUSD=X", "NZDUSD=X", "SEKUSD=X")
 
     val stockFutures  = stockSymbols.map(symbol => fetchYahooPrice(symbol, "Stock")(context))
     val cryptoFutures = cryptoSymbols.map(symbol => fetchYahooPrice(symbol, "Crypto")(context))
