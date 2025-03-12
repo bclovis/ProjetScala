@@ -1,7 +1,6 @@
 // frontend/src/pages/Dashboard.jsx
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import Header from "../components/Header";
 import Overview from "../components/Overview";
 import PortfolioChart from "../components/PortfolioChart";
 import PortfolioAssets from "../components/PortfolioAssets";
@@ -168,7 +167,6 @@ const Dashboard = () => {
 
     return (
         <div className="dashboard-page">
-            <Header />
             <div style={gridStyle}>
                 {/* Zone A : Overview & Account Summary Chart */}
                 <div style={{ gridArea: "a", background: "#e0e0e0", padding: "10px" }}>

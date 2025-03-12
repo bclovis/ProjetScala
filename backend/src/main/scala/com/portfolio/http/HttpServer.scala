@@ -1,8 +1,39 @@
 package com.portfolio.http
 
+import akka.pattern.ask
+import akka.util.Timeout
+import scala.concurrent.Future
+import scala.concurrent.ExecutionContext.Implicits.global
+import pdi.jwt.{Jwt, JwtAlgorithm, JwtClaim}
+import java.time.Instant
+import akka.actor.typed.scaladsl.AskPattern._
+import akka.actor.typed.ActorRef
+import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.adapter._ // Pour conversion en système classique
+import akka.http.scaladsl.Http
+import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.model.ws.{Message, TextMessage}
+import akka.http.scaladsl.model.headers._
+import akka.http.scaladsl.server.Directives._
+import akka.stream.Materializer
+import akka.stream.scaladsl.{Flow, Sink, Source}
+import scala.concurrent.duration._
+import io.circe.syntax._
+import io.circe.generic.auto._
+import io.circe.parser._
+import com.portfolio.db.repositories.{PortfolioRepository, AssetRepository, PerformanceRepository, MarketDataRepository, UserRepository}
+import com.portfolio.actors.{MarketDataActor, UserActor}
+import com.portfolio.models.{MarketData, User, Portfolio, Asset}
+import akka.actor.typed.Scheduler
+import akka.actor.typed.receptionist.{Receptionist, ServiceKey}
+import io.circe.parser._
+import io.circe.generic.auto._
+import akka.actor.typed.ActorSystem
+import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.scaladsl.adapter._ // Pour conversion en système classique ff
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.StatusCodes
@@ -33,6 +64,7 @@ import java.time.LocalDateTime
 case class Credentials(email: String, password: String)
 case class AssetData(assetType: String, symbol: String, quantity: BigDecimal, avgBuyPrice: BigDecimal)
 case class DepositData(amount: BigDecimal)
+case class UserRegistration(username: String, email: String, password: String)
 
 object HttpServer {
 
@@ -48,10 +80,20 @@ object HttpServer {
   val marketDataRepo  = new MarketDataRepository(dbUrl, dbUser, dbPassword)
   val userAccountRepo = new UserAccountRepository(dbUrl, dbUser, dbPassword)
   val transactionRepo = new TransactionRepository(dbUrl, dbUser, dbPassword)
+  val userRepo        = new UserRepository(dbUrl, dbUser, dbPassword)
+  var userActor: Option[ActorRef[UserActor.Command]] = None
 
   // Création d'un unique système d'acteurs typé avec racine
   val rootBehavior = Behaviors.setup[Any] { context =>
-    val marketDataActor = context.spawn(MarketDataActor(), "marketDataActor")
+
+    // Creation de l'acteur UserActor via spawn du contexte
+    val userActorRef = context.spawn(UserActor(userRepo), "userActor")
+    userActor = Some(userActorRef)
+
+    // Création de l'acteur MarketDataActor via spawn du contexte
+    val marketDataActor: ActorRef[MarketDataActor.Command] = context.spawn(MarketDataActor(), "marketDataActor")
+
+    // Exposer l'acteur via une extension pour y accéder ailleurs
     context.system.receptionist ! Receptionist.Register(
       ServiceKey[MarketDataActor.Command]("marketDataActor"),
       marketDataActor
@@ -129,14 +171,32 @@ object HttpServer {
               post {
                 entity(as[String]) { credentialsJson =>
                   val credentials = parseCredentials(credentialsJson)
-                  onComplete(authenticate(credentials.email, credentials.password)) {
-                    case scala.util.Success(isValid) =>
-                      if (isValid)
-                        complete(HttpResponse(StatusCodes.OK, entity = """{"token": "dummy_token"}"""))
-                      else
-                        complete(HttpResponse(StatusCodes.Unauthorized, entity = """{"message": "Email ou mot de passe incorrect"}"""))
-                    case scala.util.Failure(ex) =>
-                      complete(HttpResponse(StatusCodes.InternalServerError, entity = s"Erreur de connexion: ${ex.getMessage}"))
+
+                  userActor match {
+                    case Some(actorRef) =>
+                      implicit val scheduler: Scheduler = system.scheduler
+                      val userFuture = actorRef.ask(ref => UserActor.LoginUser(credentials.email, credentials.password, ref))(timeout, scheduler)
+
+                      onComplete(userFuture) {
+                        case scala.util.Success(Some(user)) =>
+                          val claims = JwtClaim(
+                            expiration = Some(Instant.now.plusSeconds(3600).getEpochSecond),
+                            issuedAt = Some(Instant.now.getEpochSecond),
+                            content = s"""{"userId": ${user.id}, "email": "${user.email}"}"""
+                          )
+                          val token = Jwt.encode(claims, "super-secret-key", JwtAlgorithm.HS256)
+
+                          complete(HttpResponse(StatusCodes.OK, entity = s"""{"token": "$token"}"""))
+
+                        case scala.util.Success(None) =>
+                          complete(HttpResponse(StatusCodes.Unauthorized, entity = """{"message": "Email ou mot de passe incorrect"}"""))
+
+                        case scala.util.Failure(ex) =>
+                          complete(HttpResponse(StatusCodes.InternalServerError, entity = s"Erreur de connexion: ${ex.getMessage}"))
+                      }
+
+                    case None =>
+                      complete(HttpResponse(StatusCodes.InternalServerError, entity = "Erreur: userActor non initialisé"))
                   }
                 }
               }
@@ -160,6 +220,32 @@ object HttpServer {
                 }
               }
             } ~
+            // Endpoint d'inscription (register)
+            path("register") {
+              post {
+                entity(as[String]) { userJson =>
+                  parseUserRegistration(userJson) match {
+                    case Some(userData) =>
+                      userActor match {
+                        case Some(actorRef) =>
+                          val userFuture = actorRef.ask(ref => UserActor.RegisterUser(userData.username, userData.email, userData.passwordHash, ref))(timeout, scheduler)
+                          onComplete(userFuture) {
+                            case scala.util.Success(Right(user)) =>
+                              complete(HttpResponse(StatusCodes.Created, entity = """{"message": "Utilisateur créé avec succès"}"""))
+                            case scala.util.Success(Left(errorMessage)) =>
+                              complete(HttpResponse(StatusCodes.BadRequest, entity = s"""{"message": "$errorMessage"}"""))
+                            case scala.util.Failure(ex) =>
+                              complete(HttpResponse(StatusCodes.InternalServerError, entity = s"""{"message": "Erreur serveur: ${ex.getMessage}"}"""))
+                          }
+                        case None =>
+                          complete(HttpResponse(StatusCodes.InternalServerError, entity = """{"message": "Erreur: userActor non initialisé"}"""))
+                      }
+                    case None =>
+                      complete(HttpResponse(StatusCodes.BadRequest, entity = """{"message": "Requête invalide : champs manquants"}"""))
+                  }
+                }
+              }
+            }~
             // Endpoint pour récupérer le solde du wallet (fonds déposés)
             path("wallet-balance") {
               get {
@@ -403,15 +489,35 @@ object HttpServer {
   }
 
   def parseCredentials(json: String): Credentials = {
+  parse(json) match {
+    case Right(jsonData) =>
+      val email = jsonData.hcursor.downField("email").as[String].getOrElse("")
+      val password = jsonData.hcursor.downField("password").as[String].getOrElse("")
+      println(s"[DEBUG] JSON reçu : $json") // ✅ Ajoute un log
+      println(s"[DEBUG] Email extrait : $email")
+      println(s"[DEBUG] Password extrait : $password")
+      Credentials(email, password)
+
+    case Left(_) =>
+      println("[DEBUG] Erreur lors du parsing JSON")
+      Credentials("", "")
+  }
+}
+  def parseUserRegistration(json: String): Option[User] = {
     parse(json) match {
       case Right(jsonData) =>
+        val username = jsonData.hcursor.downField("username").as[String].getOrElse("")
         val email = jsonData.hcursor.downField("email").as[String].getOrElse("")
         val password = jsonData.hcursor.downField("password").as[String].getOrElse("")
-        Credentials(email, password)
-      case Left(_) => Credentials("", "")
+
+        if (username.nonEmpty && email.nonEmpty && password.nonEmpty) {
+          Some(User(0, username, email, password, isVerified = false, java.time.LocalDateTime.now()))
+        } else {
+          None
+        }
+      case Left(_) => None
     }
   }
-
   def decodeUserIdFromToken(token: String): Int = 1
 
   def parsePortfolioName(json: String): String = {
