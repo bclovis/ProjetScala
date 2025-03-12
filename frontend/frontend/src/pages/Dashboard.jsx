@@ -7,6 +7,8 @@ import PortfolioChart from "../components/PortfolioChart";
 import PortfolioAssets from "../components/PortfolioAssets";
 import PortfolioList from "../components/PortfolioList";
 import AccountSummaryChart from "../components/AccountSummaryChart";
+import TransactionHistory from "../components/TransactionHistory";
+
 import "../styles/Dashboard.css";
 
 const Dashboard = () => {
@@ -157,11 +159,10 @@ const Dashboard = () => {
         padding: "10px",
     };
 
-    // Zone d'actualités (exemple)
-    const PopularNews = () => (
-        <div style={{ padding: "10px" }}>
-            <h3>Actualités</h3>
-            <p>Infos du marché...</p>
+    // Section Historique des transactions
+    const TransactionHistorySection = () => (
+        <div style={{ padding: '10px' }}>
+            <TransactionHistory portfolioId={selectedPortfolio} token={token} />
         </div>
     );
 
@@ -230,7 +231,7 @@ const Dashboard = () => {
                 </div>
                 {/* Zone D : Actualités */}
                 <div style={{ gridArea: "d", background: "#b0b0b0", padding: "10px" }}>
-                    <PopularNews />
+                    <TransactionHistorySection />
                 </div>
 
             </div>

@@ -51,11 +51,9 @@ class AssetRepository(dbUrl: String, dbUser: String, dbPassword: String) {
     val rs = selectStmt.executeQuery()
 
     if (rs.next()) {
-      // L'actif existe déjà, on récupère la quantité et le prix moyen actuel
       val oldQuantity = BigDecimal(rs.getBigDecimal("quantity"))
       val oldAvgPrice = BigDecimal(rs.getBigDecimal("avg_buy_price"))
       val newQuantity = oldQuantity + quantity
-      // Calcul du nouveau prix moyen pondéré
       val newAvgPrice = (oldQuantity * oldAvgPrice + quantity * pricePaid) / newQuantity
 
       val updateStmt = connection.prepareStatement("UPDATE portfolio_assets SET quantity = ?, avg_buy_price = ? WHERE portfolio_id = ? AND symbol = ?")
@@ -66,7 +64,6 @@ class AssetRepository(dbUrl: String, dbUser: String, dbPassword: String) {
       updateStmt.executeUpdate()
       updateStmt.close()
     } else {
-      // Si l'actif n'existe pas encore, on l'insère en initialisant le prix moyen avec le prix payé
       val insertStmt = connection.prepareStatement("INSERT INTO portfolio_assets (portfolio_id, asset_type, symbol, quantity, avg_buy_price) VALUES (?, ?, ?, ?, ?)")
       insertStmt.setInt(1, portfolioId)
       insertStmt.setString(2, assetType)
@@ -85,7 +82,6 @@ class AssetRepository(dbUrl: String, dbUser: String, dbPassword: String) {
   def sellAssetFromPortfolio(portfolioId: Int, symbol: String, quantity: BigDecimal)(implicit ec: ExecutionContext): Future[Unit] = Future {
     val connection = getConnection()
 
-    // Vérifier que l'actif existe et récupérer la quantité actuelle
     val selectStmt = connection.prepareStatement("SELECT quantity FROM portfolio_assets WHERE portfolio_id = ? AND symbol = ?")
     selectStmt.setInt(1, portfolioId)
     selectStmt.setString(2, symbol)
@@ -101,7 +97,6 @@ class AssetRepository(dbUrl: String, dbUser: String, dbPassword: String) {
       }
       val newQuantity = currentQuantity - quantity
       if (newQuantity > 0) {
-        // Mettre à jour la quantité
         val updateStmt = connection.prepareStatement("UPDATE portfolio_assets SET quantity = ? WHERE portfolio_id = ? AND symbol = ?")
         updateStmt.setBigDecimal(1, newQuantity.underlying())
         updateStmt.setInt(2, portfolioId)
@@ -109,7 +104,6 @@ class AssetRepository(dbUrl: String, dbUser: String, dbPassword: String) {
         updateStmt.executeUpdate()
         updateStmt.close()
       } else {
-        // Supprimer l'actif si la quantité devient 0
         val deleteStmt = connection.prepareStatement("DELETE FROM portfolio_assets WHERE portfolio_id = ? AND symbol = ?")
         deleteStmt.setInt(1, portfolioId)
         deleteStmt.setString(2, symbol)

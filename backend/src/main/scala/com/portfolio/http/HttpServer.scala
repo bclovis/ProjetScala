@@ -19,13 +19,15 @@ import io.circe.syntax._
 import io.circe.generic.auto._
 import io.circe.parser._
 import akka.http.scaladsl.unmarshalling.Unmarshal
-import com.portfolio.db.repositories.{PortfolioRepository, AssetRepository, PerformanceRepository, MarketDataRepository, UserAccountRepository}
+import com.portfolio.db.repositories.{PortfolioRepository, AssetRepository, PerformanceRepository, MarketDataRepository, UserAccountRepository, TransactionRepository}
 import com.portfolio.actors.MarketDataActor
 import com.portfolio.models.MarketData
+import com.portfolio.models.Transaction
 import akka.actor.typed.Scheduler
 import com.portfolio.services.AccountSummaryService
 import akka.actor.typed.receptionist.{Receptionist, ServiceKey}
 import com.portfolio.services.BalanceService
+import java.time.LocalDateTime
 
 // Classes d'aide pour le parsing JSON
 case class Credentials(email: String, password: String)
@@ -44,8 +46,8 @@ object HttpServer {
   val assetRepo       = new AssetRepository(dbUrl, dbUser, dbPassword)
   val performanceRepo = new PerformanceRepository(dbUrl, dbUser, dbPassword)
   val marketDataRepo  = new MarketDataRepository(dbUrl, dbUser, dbPassword)
-  // Nouveau repository pour le wallet (user_accounts)
   val userAccountRepo = new UserAccountRepository(dbUrl, dbUser, dbPassword)
+  val transactionRepo = new TransactionRepository(dbUrl, dbUser, dbPassword)
 
   // Création d'un unique système d'acteurs typé avec racine
   val rootBehavior = Behaviors.setup[Any] { context =>
@@ -216,14 +218,13 @@ object HttpServer {
                 }
               }
             } ~
-            // POST ajout d'un actif dans un portefeuille avec vérification du solde
+            // POST achat d'un actif dans un portefeuille
             path("portfolios" / IntNumber / "assets") { portfolioId =>
               post {
                 entity(as[String]) { assetJson =>
                   headerValueByName("Authorization") { token =>
                     val userId = decodeUserIdFromToken(token)
-                    val assetData = parseAssetData(assetJson) // avgBuyPrice sera ignoré
-                    // Récupérer le prix actuel de l'actif
+                    val assetData = parseAssetData(assetJson) // avgBuyPrice ignoré
                     onComplete(getCurrentPrice(assetData.symbol)) {
                       case scala.util.Success(currentPrice) =>
                         val cost = assetData.quantity * currentPrice
@@ -232,7 +233,24 @@ object HttpServer {
                             if (debitSuccess) {
                               onComplete(assetRepo.addAssetToPortfolio(portfolioId, assetData.assetType, assetData.symbol, assetData.quantity, currentPrice)) {
                                 case scala.util.Success(_) =>
-                                  complete(HttpResponse(StatusCodes.Created, entity = """{"message": "Actif ajouté et compte débité avec succès"}"""))
+                                  // Création d'une transaction d'achat
+                                  val tx = Transaction(
+                                    id = 0,
+                                    portfolioId = portfolioId,
+                                    assetType = assetData.assetType,
+                                    symbol = assetData.symbol,
+                                    amount = assetData.quantity,
+                                    price = currentPrice,
+                                    txType = "buy",
+                                    status = "completed",
+                                    createdAt = LocalDateTime.now()
+                                  )
+                                  onComplete(transactionRepo.createTransaction(tx)) {
+                                    case scala.util.Success(_) =>
+                                      complete(HttpResponse(StatusCodes.Created, entity = """{"message": "Actif acheté et transaction enregistrée"}"""))
+                                    case scala.util.Failure(ex) =>
+                                      complete(HttpResponse(StatusCodes.InternalServerError, entity = s"Erreur lors de l'enregistrement de la transaction: ${ex.getMessage}"))
+                                  }
                                 case scala.util.Failure(ex) =>
                                   complete(HttpResponse(StatusCodes.InternalServerError, entity = s"Erreur lors de l'ajout de l'actif: ${ex.getMessage}"))
                               }
@@ -260,7 +278,6 @@ object HttpServer {
                         val assetType = jsonData.hcursor.downField("asset_type").as[String].getOrElse("")
                         val symbol = jsonData.hcursor.downField("symbol").as[String].getOrElse("")
                         val quantity = jsonData.hcursor.downField("quantity").as[BigDecimal].getOrElse(BigDecimal(0))
-                        // Récupérer le prix actuel de l'actif pour calculer la valeur de vente
                         onComplete(getCurrentPrice(symbol)) {
                           case scala.util.Success(currentPrice) =>
                             val saleValue = quantity * currentPrice
@@ -268,7 +285,24 @@ object HttpServer {
                               case scala.util.Success(_) =>
                                 onComplete(userAccountRepo.deposit(userId, saleValue)) {
                                   case scala.util.Success(_) =>
-                                    complete(HttpResponse(StatusCodes.OK, entity = s"""{"message": "Actif vendu, compte crédité de $saleValue"}"""))
+                                    // Enregistrer une transaction de vente
+                                    val tx = Transaction(
+                                      id = 0,
+                                      portfolioId = portfolioId,
+                                      assetType = assetType,
+                                      symbol = symbol,
+                                      amount = quantity,
+                                      price = currentPrice,
+                                      txType = "sell",
+                                      status = "completed",
+                                      createdAt = LocalDateTime.now()
+                                    )
+                                    onComplete(transactionRepo.createTransaction(tx)) {
+                                      case scala.util.Success(_) =>
+                                        complete(HttpResponse(StatusCodes.OK, entity = s"""{"message": "Actif vendu, compte crédité de $saleValue"}"""))
+                                      case scala.util.Failure(ex) =>
+                                        complete(HttpResponse(StatusCodes.InternalServerError, entity = s"Erreur lors de l'enregistrement de la transaction: ${ex.getMessage}"))
+                                    }
                                   case scala.util.Failure(ex) =>
                                     complete(HttpResponse(StatusCodes.InternalServerError, entity = s"Erreur lors du crédit du compte: ${ex.getMessage}"))
                                 }
@@ -318,6 +352,19 @@ object HttpServer {
                   onComplete(accountSummaryService.calculateAccountSummary(userId)) {
                     case scala.util.Success(summary) =>
                       complete(HttpResponse(StatusCodes.OK, entity = summary.asJson.noSpaces))
+                    case scala.util.Failure(ex) =>
+                      complete(HttpResponse(StatusCodes.InternalServerError, entity = s"Erreur: ${ex.getMessage}"))
+                  }
+                }
+              }
+            } ~
+            // GET de l'historique des transactions pour un portefeuille
+            path("portfolios" / IntNumber / "transactions") { portfolioId =>
+              get {
+                headerValueByName("Authorization") { token =>
+                  onComplete(transactionRepo.getTransactionsForPortfolio(portfolioId)) {
+                    case scala.util.Success(transactions) =>
+                      complete(HttpResponse(StatusCodes.OK, entity = transactions.asJson.noSpaces))
                     case scala.util.Failure(ex) =>
                       complete(HttpResponse(StatusCodes.InternalServerError, entity = s"Erreur: ${ex.getMessage}"))
                   }
