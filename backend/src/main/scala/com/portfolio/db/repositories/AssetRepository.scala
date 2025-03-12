@@ -81,4 +81,50 @@ class AssetRepository(dbUrl: String, dbUser: String, dbPassword: String) {
     selectStmt.close()
     connection.close()
   }
+
+  def sellAssetFromPortfolio(portfolioId: Int, symbol: String, quantity: BigDecimal)(implicit ec: ExecutionContext): Future[Unit] = Future {
+    val connection = getConnection()
+
+    // Vérifier que l'actif existe et récupérer la quantité actuelle
+    val selectStmt = connection.prepareStatement("SELECT quantity FROM portfolio_assets WHERE portfolio_id = ? AND symbol = ?")
+    selectStmt.setInt(1, portfolioId)
+    selectStmt.setString(2, symbol)
+    val rs = selectStmt.executeQuery()
+
+    if (rs.next()) {
+      val currentQuantity = BigDecimal(rs.getBigDecimal("quantity"))
+      if (currentQuantity < quantity) {
+        rs.close()
+        selectStmt.close()
+        connection.close()
+        throw new Exception("Quantité insuffisante pour la vente")
+      }
+      val newQuantity = currentQuantity - quantity
+      if (newQuantity > 0) {
+        // Mettre à jour la quantité
+        val updateStmt = connection.prepareStatement("UPDATE portfolio_assets SET quantity = ? WHERE portfolio_id = ? AND symbol = ?")
+        updateStmt.setBigDecimal(1, newQuantity.underlying())
+        updateStmt.setInt(2, portfolioId)
+        updateStmt.setString(3, symbol)
+        updateStmt.executeUpdate()
+        updateStmt.close()
+      } else {
+        // Supprimer l'actif si la quantité devient 0
+        val deleteStmt = connection.prepareStatement("DELETE FROM portfolio_assets WHERE portfolio_id = ? AND symbol = ?")
+        deleteStmt.setInt(1, portfolioId)
+        deleteStmt.setString(2, symbol)
+        deleteStmt.executeUpdate()
+        deleteStmt.close()
+      }
+    } else {
+      rs.close()
+      selectStmt.close()
+      connection.close()
+      throw new Exception("Actif non trouvé")
+    }
+
+    rs.close()
+    selectStmt.close()
+    connection.close()
+  }
 }

@@ -249,6 +249,42 @@ object HttpServer {
                 }
               }
             } ~
+            // Nouveau endpoint pour la vente d'un actif dans un portefeuille
+            path("portfolios" / IntNumber / "sell") { portfolioId =>
+              post {
+                entity(as[String]) { sellJson =>
+                  headerValueByName("Authorization") { token =>
+                    val userId = decodeUserIdFromToken(token)
+                    parse(sellJson) match {
+                      case Right(jsonData) =>
+                        val assetType = jsonData.hcursor.downField("asset_type").as[String].getOrElse("")
+                        val symbol = jsonData.hcursor.downField("symbol").as[String].getOrElse("")
+                        val quantity = jsonData.hcursor.downField("quantity").as[BigDecimal].getOrElse(BigDecimal(0))
+                        // Récupérer le prix actuel de l'actif pour calculer la valeur de vente
+                        onComplete(getCurrentPrice(symbol)) {
+                          case scala.util.Success(currentPrice) =>
+                            val saleValue = quantity * currentPrice
+                            onComplete(assetRepo.sellAssetFromPortfolio(portfolioId, symbol, quantity)) {
+                              case scala.util.Success(_) =>
+                                onComplete(userAccountRepo.deposit(userId, saleValue)) {
+                                  case scala.util.Success(_) =>
+                                    complete(HttpResponse(StatusCodes.OK, entity = s"""{"message": "Actif vendu, compte crédité de $saleValue"}"""))
+                                  case scala.util.Failure(ex) =>
+                                    complete(HttpResponse(StatusCodes.InternalServerError, entity = s"Erreur lors du crédit du compte: ${ex.getMessage}"))
+                                }
+                              case scala.util.Failure(ex) =>
+                                complete(HttpResponse(StatusCodes.BadRequest, entity = s"Erreur lors de la vente: ${ex.getMessage}"))
+                            }
+                          case scala.util.Failure(ex) =>
+                            complete(HttpResponse(StatusCodes.InternalServerError, entity = s"Erreur lors de la récupération du prix: ${ex.getMessage}"))
+                        }
+                      case Left(_) =>
+                        complete(HttpResponse(StatusCodes.BadRequest, entity = """{"message": "JSON invalide"}"""))
+                    }
+                  }
+                }
+              }
+            } ~
             // GET des données de performance d'un portefeuille
             path("portfolios" / IntNumber / "performance") { portfolioId =>
               get {
