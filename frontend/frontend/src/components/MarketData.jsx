@@ -21,7 +21,8 @@ function MarketDashboard() {
             setMarketData(data);
         };
 
-        return () => socket.close();
+        //return () => socket.close();
+        return;
     }, []);
 
     const generateChartData = (assetData, label) => ({
