@@ -1,8 +1,7 @@
-//backend/src/main/scala/com/portfolio/db/repositories/AssetRepository.scala
 package com.portfolio.db.repositories
 
 import com.portfolio.models.Asset
-import java.sql.{Connection, DriverManager, Statement}
+import java.sql.{Connection, DriverManager}
 import java.time.LocalDateTime
 import scala.concurrent.{Future, ExecutionContext}
 import scala.math.BigDecimal
@@ -30,6 +29,8 @@ class AssetRepository(dbUrl: String, dbUser: String, dbPassword: String) {
         rs.getTimestamp("created_at").toLocalDateTime
       )
     }
+    rs.close()
+    stmt.close()
     connection.close()
     assets
   }
@@ -39,18 +40,45 @@ class AssetRepository(dbUrl: String, dbUser: String, dbPassword: String) {
                            assetType: String,
                            symbol: String,
                            quantity: BigDecimal,
-                           avgBuyPrice: BigDecimal
+                           pricePaid: BigDecimal  // Ce paramètre représente le prix de la transaction actuelle
                          )(implicit ec: ExecutionContext): Future[Unit] = Future {
     val connection = getConnection()
-    val stmt = connection.prepareStatement(
-      "INSERT INTO portfolio_assets (portfolio_id, asset_type, symbol, quantity, avg_buy_price) VALUES (?, ?, ?, ?, ?)"
-    )
-    stmt.setInt(1, portfolioId)
-    stmt.setString(2, assetType)
-    stmt.setString(3, symbol)
-    stmt.setBigDecimal(4, quantity.underlying())
-    stmt.setBigDecimal(5, avgBuyPrice.underlying())
-    stmt.executeUpdate()
+
+    // Vérifier si l'actif existe déjà pour ce portefeuille
+    val selectStmt = connection.prepareStatement("SELECT quantity, avg_buy_price FROM portfolio_assets WHERE portfolio_id = ? AND symbol = ?")
+    selectStmt.setInt(1, portfolioId)
+    selectStmt.setString(2, symbol)
+    val rs = selectStmt.executeQuery()
+
+    if (rs.next()) {
+      // L'actif existe déjà, on récupère la quantité et le prix moyen actuel
+      val oldQuantity = BigDecimal(rs.getBigDecimal("quantity"))
+      val oldAvgPrice = BigDecimal(rs.getBigDecimal("avg_buy_price"))
+      val newQuantity = oldQuantity + quantity
+      // Calcul du nouveau prix moyen pondéré
+      val newAvgPrice = (oldQuantity * oldAvgPrice + quantity * pricePaid) / newQuantity
+
+      val updateStmt = connection.prepareStatement("UPDATE portfolio_assets SET quantity = ?, avg_buy_price = ? WHERE portfolio_id = ? AND symbol = ?")
+      updateStmt.setBigDecimal(1, newQuantity.underlying())
+      updateStmt.setBigDecimal(2, newAvgPrice.underlying())
+      updateStmt.setInt(3, portfolioId)
+      updateStmt.setString(4, symbol)
+      updateStmt.executeUpdate()
+      updateStmt.close()
+    } else {
+      // Si l'actif n'existe pas encore, on l'insère en initialisant le prix moyen avec le prix payé
+      val insertStmt = connection.prepareStatement("INSERT INTO portfolio_assets (portfolio_id, asset_type, symbol, quantity, avg_buy_price) VALUES (?, ?, ?, ?, ?)")
+      insertStmt.setInt(1, portfolioId)
+      insertStmt.setString(2, assetType)
+      insertStmt.setString(3, symbol)
+      insertStmt.setBigDecimal(4, quantity.underlying())
+      insertStmt.setBigDecimal(5, pricePaid.underlying())
+      insertStmt.executeUpdate()
+      insertStmt.close()
+    }
+
+    rs.close()
+    selectStmt.close()
     connection.close()
   }
 }

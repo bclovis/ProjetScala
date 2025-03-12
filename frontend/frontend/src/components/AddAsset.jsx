@@ -13,6 +13,7 @@ const AddAsset = ({ portfolioId, token, onAssetAdded }) => {
             asset_type: assetType,
             symbol,
             quantity: parseFloat(quantity)
+            // Le prix payé sera récupéré automatiquement côté backend
         };
 
         try {

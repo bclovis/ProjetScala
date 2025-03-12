@@ -18,6 +18,7 @@ import scala.concurrent.duration._
 import io.circe.syntax._
 import io.circe.generic.auto._
 import io.circe.parser._
+import akka.http.scaladsl.unmarshalling.Unmarshal
 import com.portfolio.db.repositories.{PortfolioRepository, AssetRepository, PerformanceRepository, MarketDataRepository, UserAccountRepository}
 import com.portfolio.actors.MarketDataActor
 import com.portfolio.models.MarketData
@@ -82,6 +83,30 @@ object HttpServer {
     "marketDataActorSubscriber"
   ))
 
+  // Fonction pour récupérer le prix actuel d'un actif via Yahoo Finance
+  def getCurrentPrice(symbol: String): Future[BigDecimal] = {
+    val url = s"https://query1.finance.yahoo.com/v8/finance/chart/$symbol"
+    Http()(classicSystem).singleRequest(HttpRequest(uri = url)).flatMap { response =>
+      Unmarshal(response.entity).to[String].map { jsonString =>
+        parse(jsonString) match {
+          case Right(json) =>
+            val cursor = json.hcursor.downField("chart").downField("result").downArray
+            val openPrices = cursor
+              .downField("indicators")
+              .downField("quote")
+              .downArray
+              .downField("open")
+              .as[Seq[Double]]
+              .getOrElse(Seq())
+            openPrices.reverse.find(price => !price.isNaN && price > 0.0)
+              .map(BigDecimal(_))
+              .getOrElse(BigDecimal(0))
+          case Left(_) => BigDecimal(0)
+        }
+      }
+    }
+  }
+
   def main(args: Array[String]): Unit = {
     while(marketDataActor.isEmpty) {
       Thread.sleep(100)
@@ -120,7 +145,6 @@ object HttpServer {
                 headerValueByName("Authorization") { token =>
                   val userId = decodeUserIdFromToken(token)
                   entity(as[String]) { depositJson =>
-                    // Parse du JSON pour obtenir le montant à déposer
                     val amount = parse(depositJson)
                       .flatMap(_.hcursor.downField("amount").as[BigDecimal])
                       .getOrElse(BigDecimal(0))
@@ -198,21 +222,28 @@ object HttpServer {
                 entity(as[String]) { assetJson =>
                   headerValueByName("Authorization") { token =>
                     val userId = decodeUserIdFromToken(token)
-                    val assetData = parseAssetData(assetJson)
-                    // Calcul du coût d'achat
-                    val cost = assetData.quantity * assetData.avgBuyPrice
-                    onComplete(userAccountRepo.debit(userId, cost)) {
-                      case scala.util.Success(true) =>
-                        onComplete(assetRepo.addAssetToPortfolio(portfolioId, assetData.assetType, assetData.symbol, assetData.quantity, assetData.avgBuyPrice)) {
-                          case scala.util.Success(_) =>
-                            complete(HttpResponse(StatusCodes.Created, entity = """{"message": "Actif ajouté et compte débité avec succès"}"""))
+                    val assetData = parseAssetData(assetJson) // avgBuyPrice sera ignoré
+                    // Récupérer le prix actuel de l'actif
+                    onComplete(getCurrentPrice(assetData.symbol)) {
+                      case scala.util.Success(currentPrice) =>
+                        val cost = assetData.quantity * currentPrice
+                        onComplete(userAccountRepo.debit(userId, cost)) {
+                          case scala.util.Success(debitSuccess) =>
+                            if (debitSuccess) {
+                              onComplete(assetRepo.addAssetToPortfolio(portfolioId, assetData.assetType, assetData.symbol, assetData.quantity, currentPrice)) {
+                                case scala.util.Success(_) =>
+                                  complete(HttpResponse(StatusCodes.Created, entity = """{"message": "Actif ajouté et compte débité avec succès"}"""))
+                                case scala.util.Failure(ex) =>
+                                  complete(HttpResponse(StatusCodes.InternalServerError, entity = s"Erreur lors de l'ajout de l'actif: ${ex.getMessage}"))
+                              }
+                            } else {
+                              complete(HttpResponse(StatusCodes.BadRequest, entity = """{"message": "Solde insuffisant pour réaliser l'achat"}"""))
+                            }
                           case scala.util.Failure(ex) =>
-                            complete(HttpResponse(StatusCodes.InternalServerError, entity = s"Erreur lors de l'ajout de l'actif: ${ex.getMessage}"))
+                            complete(HttpResponse(StatusCodes.InternalServerError, entity = s"Erreur: ${ex.getMessage}"))
                         }
-                      case scala.util.Success(false) =>
-                        complete(HttpResponse(StatusCodes.BadRequest, entity = """{"message": "Solde insuffisant pour réaliser l'achat"}"""))
                       case scala.util.Failure(ex) =>
-                        complete(HttpResponse(StatusCodes.InternalServerError, entity = s"Erreur: ${ex.getMessage}"))
+                        complete(HttpResponse(StatusCodes.InternalServerError, entity = s"Erreur lors de la récupération du prix: ${ex.getMessage}"))
                     }
                   }
                 }
@@ -308,14 +339,14 @@ object HttpServer {
     }
   }
 
+  // On ignore le champ avg_buy_price reçu du client
   def parseAssetData(json: String): AssetData = {
     parse(json) match {
       case Right(parsedJson) =>
         val assetType = parsedJson.hcursor.downField("asset_type").as[String].getOrElse("")
         val symbol = parsedJson.hcursor.downField("symbol").as[String].getOrElse("")
         val quantity = parsedJson.hcursor.downField("quantity").as[BigDecimal].getOrElse(BigDecimal(0))
-        val avgBuyPrice = parsedJson.hcursor.downField("avg_buy_price").as[BigDecimal].getOrElse(BigDecimal(0))
-        AssetData(assetType, symbol, quantity, avgBuyPrice)
+        AssetData(assetType, symbol, quantity, BigDecimal(0))
       case Left(_) => AssetData("", "", BigDecimal(0), BigDecimal(0))
     }
   }
