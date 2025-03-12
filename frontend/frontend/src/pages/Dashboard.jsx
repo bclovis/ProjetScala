@@ -1,4 +1,3 @@
-// frontend/src/pages/Dashboard.jsx
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "../components/Header";
@@ -8,6 +7,7 @@ import PortfolioAssets from "../components/PortfolioAssets";
 import PortfolioList from "../components/PortfolioList";
 import AddAsset from "../components/AddAsset";
 import AccountSummaryChart from "../components/AccountSummaryChart";
+import MarketDashboard from "../components/MarketData"; // Import pour le dashboard des marchés
 import "../styles/Dashboard.css";
 
 const Dashboard = () => {
@@ -47,7 +47,6 @@ const Dashboard = () => {
             .catch((err) => setError(err.message));
     };
 
-    // Récupérer le solde global des actifs
     const fetchGlobalBalance = () => {
         fetch("http://localhost:8080/api/global-balance", {
             method: "GET",
@@ -63,7 +62,6 @@ const Dashboard = () => {
             .catch((err) => console.error("Erreur lors du chargement du solde global :", err));
     };
 
-    // Récupérer le solde des fonds déposés (compte liquide)
     const fetchWalletBalance = () => {
         fetch("http://localhost:8080/api/wallet-balance", {
             method: "GET",
@@ -79,7 +77,6 @@ const Dashboard = () => {
             .catch((err) => console.error("Erreur lors du chargement du solde du wallet :", err));
     };
 
-    // Récupérer le résumé dynamique du compte (pour le graphique en camembert)
     const fetchAccountSummary = () => {
         fetch("http://localhost:8080/api/account-summary", {
             method: "GET",
@@ -117,7 +114,6 @@ const Dashboard = () => {
             })
                 .then((res) => res.json())
                 .then((data) => {
-                    console.log("Données de performance reçues :", data);
                     setPerformanceData(data);
                 })
                 .catch((err) => console.error(err));
@@ -128,18 +124,16 @@ const Dashboard = () => {
         navigate("/market-data");
     };
 
-    // Bouton "+" pour créer un nouveau portefeuille redirigeant vers une nouvelle page
     const handleCreatePortfolio = () => {
         navigate("/create-portfolio");
     };
 
-    // Bouton "+" pour ajouter un actif redirigeant vers une nouvelle page
     const handleAddAsset = () => {
         navigate("/add-asset", { state: { portfolioId: selectedPortfolio } });
     };
 
-    // Définition du grid template areas pour les grands écrans
     const gridTemplateLargeScreens = `
+        "c c"
         "a b"
         "d b"
     `;
@@ -151,7 +145,6 @@ const Dashboard = () => {
         padding: "10px",
     };
 
-    // Zone d'actualités (exemple)
     const PopularNews = () => (
         <div style={{ padding: "10px" }}>
             <h3>Actualités</h3>
@@ -163,7 +156,7 @@ const Dashboard = () => {
         <div className="dashboard-page">
             <Header />
             <div style={gridStyle}>
-                {/* Zone A : Overview & Account Summary Chart */}
+                {/* Zone A: Overview & Account Summary Chart */}
                 <div style={{ gridArea: "a", background: "#e0e0e0", padding: "10px" }}>
                     <Overview
                         walletBalance={walletBalance}
@@ -172,7 +165,7 @@ const Dashboard = () => {
                     />
                     <AccountSummaryChart summaryData={accountSummaryData} />
                 </div>
-                {/* Zone B : Portfolio List & Performance Details */}
+                {/* Zone B: Portfolio List & Performance Details */}
                 <div style={{ gridArea: "b", background: "#d0d0d0", padding: "10px" }}>
                     <div className="portfolio-header flex justify-between items-center mb-4">
                         <h2 className="text-xl font-bold">Mes portefeuilles</h2>
@@ -217,7 +210,11 @@ const Dashboard = () => {
                         </div>
                     </div>
                 </div>
-                {/* Zone D : Actualités */}
+                {/* Zone C: Données de Marché */}
+                <div style={{ gridArea: "c", background: "#c0c0c0", padding: "10px" }}>
+                    <MarketDashboard marketData={performanceData} />
+                </div>
+                {/* Zone D: Actualités */}
                 <div style={{ gridArea: "d", background: "#b0b0b0", padding: "10px" }}>
                     <PopularNews />
                 </div>

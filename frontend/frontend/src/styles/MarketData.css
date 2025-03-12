@@ -1,137 +1,92 @@
+/* Market Data avec Tailwind */
+
 /* Conteneur principal de la page MarketData */
 .market-dashboard {
-    width: 100%;
-    background: #ffffff;
-    border-radius: 10px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    display: flex;
-    justify-content: flex-start;
-    align-items: flex-start;
+    @apply w-full bg-white rounded-lg shadow-md flex justify-start items-start;
 }
 
 /* Conteneur des boutons de catégorie à gauche */
 .category-selector-container {
-    width: 130px; /* Largeur d'une carte */
-    margin-right: 0;
+    @apply w-32 mr-0;
 }
 
 /* Sélecteur de catégorie */
 .category-selector {
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-    margin-top: 0;
-    justify-content: flex-start;
-    width: 130px;
+    @apply flex flex-col gap-0 mt-0 justify-start w-32;
 }
 
 /* Boutons du sélecteur de catégorie */
 .category-selector button {
-    background: #ffffff;
-    border: 2px solid #2d063a;
-    color: #2d063a;
-    padding: 10px;
-    font-size: 16px;
-    cursor: pointer;
-    transition: background 0.3s;
-    width: 100%;
-    height : 50px;
+    @apply bg-white border-2 border-gray-800 text-gray-800 py-2 text-base cursor-pointer transition duration-300 w-full h-[3.33rem];
 }
 
-/* Modifier le border-radius des boutons pour le différencier */
+/* Boutons au survol */
 .category-selector button:hover {
-    background: #2d063a;
-    color: #ffffff;
+    @apply bg-gray-800 text-white;
 }
 
 /* Bouton sélectionné */
 .category-selector button.selected {
-    background: #2d063a;
-    color: #ffffff;
+    @apply bg-gray-800 text-white;
 }
 
 /* Conteneur des cartes */
 .cards-container {
-    display: flex;
-    flex: 1;
-    flex-direction: column;
-    gap: 20px;
-    width: 90%;
+    @apply flex flex-1 flex-col gap-5 w-11/12;
 }
 
 /* Scroll horizontal */
 .scroll-container {
-    display: flex;
-    overflow-x: auto;
-    white-space: nowrap;
-    padding: 0 0;
-    -ms-overflow-style: none; /* Masque la barre de défilement pour Internet Explorer/Edge */
-    scrollbar-width: none; /* Masque la barre de défilement pour Firefox */
+    @apply flex overflow-x-auto whitespace-nowrap p-0;
+    scrollbar-width: none; /* Masquer scrollbar pour Firefox */
+    -ms-overflow-style: none; /* Masquer scrollbar pour IE/Edge */
+}
+
+.scroll-container::-webkit-scrollbar {
+    display: none; /* Masquer scrollbar pour Chrome/Safari */
 }
 
 /* Carte pour chaque actif */
 .asset-card {
-    flex: 0 0 auto;
-    width: 250px; /* Largeur d'une carte */
-    height: 150px;
-    text-align: center;
-    background: #f9f9f9;
-    border-radius: 8px; /* Border-radius différent pour les cartes */
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    transition: transform 0.3s, background 0.3s;
-    cursor: pointer;
-
-    /* Centrage vertical et horizontal */
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
+    @apply flex-none w-64 h-40 text-center bg-gray-100 rounded-lg shadow-md transition transform duration-300 cursor-pointer flex flex-col justify-center items-center;
 }
 
-
 .asset-card:hover {
-    background: #ececec;
-    transform: translateY(-5px);
+    @apply bg-gray-200 -translate-y-1;
 }
 
 /* Titre et informations de la carte */
 .asset-card h3 {
-    font-size: 20px;
-    color: #2d063a;
-    margin-bottom: 10px;
+    @apply text-xl text-gray-800 mb-2;
 }
 
 .asset-card p {
-    font-size: 16px;
-    margin: 5px 0;
+    @apply text-base my-1;
 }
 
-/* Mise en forme pour la variation (positif / négatif) */
+/* Variation des actifs (positif / négatif) */
 .asset-card .variation {
-    font-weight: bold;
+    @apply font-bold;
 }
 
 .asset-card .variation.positive {
-    color: #28a745;
+    @apply text-green-500;
 }
 
 .asset-card .variation.negative {
-    color: #dc3545;
+    @apply text-red-500;
 }
 
 /* Container pour le graphique d'un actif sélectionné */
 .chart-container {
-    margin-top: 0px;
-    background: #ffffff;
-    padding: 0px;
-    border-radius: 10px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    @apply mt-0 bg-white p-0 rounded-lg shadow-md;
 }
 
 .chart-container h2 {
-    font-size: 28px;
-    font-weight: 600;
-    color: #2d063a;
-    margin-bottom: 20px;
-    text-align: center;
+    @apply text-2xl font-semibold text-gray-800 mb-5 text-center;
+}
+
+/* Bouton Market Data */
+.market-data-button {
+    @apply bg-blue-500 text-white py-2 px-4 rounded font-semibold;
 }
