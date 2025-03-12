@@ -31,7 +31,7 @@ const PortfolioAssets = ({ portfolioId, token }) => {
                 <ul>
                     {assets.map((asset) => (
                         <li key={asset.id}>
-                            {asset.symbol} - {asset.quantity} ({asset.assetType}) - Prix moyen : {asset.avgBuyPrice}
+                            {asset.symbol} - {asset.quantity} ({asset.assetType})
                         </li>
                     ))}
                 </ul>
