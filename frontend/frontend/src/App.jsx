@@ -10,13 +10,13 @@ import DepositPage from "./pages/DepositPage";
 const App = () => (
     // Dans le composant App :
     <Routes>
-            <Route path="/" element={<Navigate to="/login" />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/market-data" element={<MarketDashboard />} />
-            <Route path="/add-asset" element={<AddAssetPage />} />
-            <Route path="/create-portfolio" element={<CreatePortfolioPage />} />
-            <Route path="/deposit" element={<DepositPage />} />
+        <Route path="/" element={<Navigate to="/login" />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/market-data" element={<MarketDashboard />} />
+        <Route path="/add-asset" element={<AddAssetPage />} />
+        <Route path="/create-portfolio" element={<CreatePortfolioPage />} />
+        <Route path="/deposit" element={<DepositPage />} />
     </Routes>
 );
 

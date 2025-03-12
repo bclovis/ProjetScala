@@ -6,7 +6,7 @@ import "../styles/LoginPage.css"; // Réutilise le style du Login
 const AddAssetPage = () => {
     const token = localStorage.getItem("token");
     // Pour cet exemple, nous utilisons un portfolioId fixe (à adapter selon votre logique)
-    const portfolioId = 1;
+    const portfolioId = 19;
 
     const handleAssetAdded = () => {
         alert("Actif ajouté avec succès !");

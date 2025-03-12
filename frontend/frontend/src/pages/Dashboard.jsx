@@ -14,6 +14,7 @@ const Dashboard = () => {
     const [portfolios, setPortfolios] = useState([]);
     const [performanceData, setPerformanceData] = useState(null);
     const [globalBalance, setGlobalBalance] = useState(0);
+    const [walletBalance, setWalletBalance] = useState(0);
     const [accountSummaryData, setAccountSummaryData] = useState({ crypto: 0, action: 0, devise: 0 });
     const [notifications, setNotifications] = useState([
         "Nouveau listing: SOL",
@@ -33,7 +34,7 @@ const Dashboard = () => {
             method: "GET",
             headers: {
                 "Content-Type": "application/json",
-                "Authorization": `Bearer ${token}`
+                "Authorization": `Bearer ${token}`,
             },
         })
             .then((res) => res.json())
@@ -46,7 +47,7 @@ const Dashboard = () => {
             .catch((err) => setError(err.message));
     };
 
-    // Récupérer le solde global
+    // Récupérer le solde global des actifs
     const fetchGlobalBalance = () => {
         fetch("http://localhost:8080/api/global-balance", {
             method: "GET",
@@ -62,7 +63,23 @@ const Dashboard = () => {
             .catch((err) => console.error("Erreur lors du chargement du solde global :", err));
     };
 
-    // Récupérer le résumé dynamique du compte
+    // Récupérer le solde des fonds déposés (compte liquide)
+    const fetchWalletBalance = () => {
+        fetch("http://localhost:8080/api/wallet-balance", {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`,
+            },
+        })
+            .then((res) => res.json())
+            .then((data) => {
+                setWalletBalance(parseFloat(data.walletBalance));
+            })
+            .catch((err) => console.error("Erreur lors du chargement du solde du wallet :", err));
+    };
+
+    // Récupérer le résumé dynamique du compte (pour le graphique en camembert)
     const fetchAccountSummary = () => {
         fetch("http://localhost:8080/api/account-summary", {
             method: "GET",
@@ -76,7 +93,7 @@ const Dashboard = () => {
                 setAccountSummaryData({
                     crypto: parseFloat(data.crypto),
                     action: parseFloat(data.action),
-                    devise: parseFloat(data.devise)
+                    devise: parseFloat(data.devise),
                 });
             })
             .catch((err) => console.error("Erreur lors du chargement du résumé du compte :", err));
@@ -85,6 +102,7 @@ const Dashboard = () => {
     useEffect(() => {
         fetchPortfolios();
         fetchGlobalBalance();
+        fetchWalletBalance();
         fetchAccountSummary();
     }, [navigate, token]);
 
@@ -94,7 +112,7 @@ const Dashboard = () => {
                 method: "GET",
                 headers: {
                     "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`
+                    "Authorization": `Bearer ${token}`,
                 },
             })
                 .then((res) => res.json())
@@ -122,20 +140,20 @@ const Dashboard = () => {
 
     // Définition du grid template areas pour les grands écrans
     const gridTemplateLargeScreens = `
-  "a b"
-  "d b"
-`;
+        "a b"
+        "d b"
+    `;
     const gridStyle = {
         display: "grid",
         gridTemplateAreas: gridTemplateLargeScreens,
         gridTemplateColumns: "1fr 2fr",
         gap: "10px",
-        padding: "10px"
+        padding: "10px",
     };
 
-    // Inversion : Zone D affiche Actualités, Zone E affiche Forex Populaires
+    // Zone d'actualités (exemple)
     const PopularNews = () => (
-        <div style={{ padding: '10px' }}>
+        <div style={{ padding: "10px" }}>
             <h3>Actualités</h3>
             <p>Infos du marché...</p>
         </div>
@@ -148,18 +166,19 @@ const Dashboard = () => {
                 {/* Zone A : Overview & Account Summary Chart */}
                 <div style={{ gridArea: "a", background: "#e0e0e0", padding: "10px" }}>
                     <Overview
+                        walletBalance={walletBalance}
                         globalBalance={globalBalance}
-                        accountSummary={""}
                         notifications={notifications}
                     />
                     <AccountSummaryChart summaryData={accountSummaryData} />
                 </div>
                 {/* Zone B : Portfolio List & Performance Details */}
                 <div style={{ gridArea: "b", background: "#d0d0d0", padding: "10px" }}>
-                    {/* En-tête "Mes portefeuilles" avec bouton "+" */}
                     <div className="portfolio-header flex justify-between items-center mb-4">
                         <h2 className="text-xl font-bold">Mes portefeuilles</h2>
-                        <button onClick={handleCreatePortfolio} className="text-xl font-bold px-2 py-1 bg-green-500 text-white rounded">+</button>
+                        <button onClick={handleCreatePortfolio} className="text-xl font-bold px-2 py-1 bg-green-500 text-white rounded">
+                            +
+                        </button>
                     </div>
                     <PortfolioList
                         portfolios={portfolios}
@@ -179,7 +198,9 @@ const Dashboard = () => {
                             <div className="portfolio-assets-container flex-1 p-2">
                                 <div className="portfolio-assets-header flex justify-between items-center mb-2">
                                     <h3 className="text-lg font-bold">Actifs du portefeuille</h3>
-                                    <button onClick={handleAddAsset} className="text-xl font-bold px-2 py-1 bg-green-500 text-white rounded">+</button>
+                                    <button onClick={handleAddAsset} className="text-xl font-bold px-2 py-1 bg-green-500 text-white rounded">
+                                        +
+                                    </button>
                                 </div>
                                 {selectedPortfolio && (
                                     <PortfolioAssets portfolioId={selectedPortfolio} token={token} />
