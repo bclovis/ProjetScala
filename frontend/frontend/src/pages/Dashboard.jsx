@@ -135,7 +135,7 @@ const Dashboard = () => {
 
     // Bouton "+" pour ajouter un actif redirigeant vers une nouvelle page
     const handleAddAsset = () => {
-        navigate("/add-asset");
+        navigate("/add-asset", { state: { portfolioId: selectedPortfolio } });
     };
 
     // Définition du grid template areas pour les grands écrans

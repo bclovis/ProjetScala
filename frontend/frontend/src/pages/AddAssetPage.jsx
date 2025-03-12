@@ -1,12 +1,14 @@
 import React from "react";
+import { useLocation } from "react-router-dom";
 import AddAsset from "../components/AddAsset";
 import Header from "../components/Header";
 import "../styles/LoginPage.css"; // Réutilise le style du Login
 
 const AddAssetPage = () => {
+    const location = useLocation();
+    // Récupère le portfolioId passé via l'état, avec une valeur par défaut si besoin
+    const portfolioId = location.state?.portfolioId || 1;
     const token = localStorage.getItem("token");
-    // Pour cet exemple, nous utilisons un portfolioId fixe (à adapter selon votre logique)
-    const portfolioId = 19;
 
     const handleAssetAdded = () => {
         alert("Actif ajouté avec succès !");
