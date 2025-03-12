@@ -1,4 +1,4 @@
-//frontend/src/components/CreatPortfolio.jsx
+//frontend/src/components/CreatePortfolio.jsx
 import React, { useState } from "react";
 import PropTypes from "prop-types";
 

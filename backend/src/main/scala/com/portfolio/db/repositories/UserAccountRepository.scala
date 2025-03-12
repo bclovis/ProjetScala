@@ -23,18 +23,15 @@ class UserAccountRepository(dbUrl: String, dbUser: String, dbPassword: String) {
 
   def deposit(userId: Int, amount: BigDecimal)(implicit ec: ExecutionContext): Future[Unit] = Future {
     val connection = getConnection()
-    // Vérifier si un enregistrement existe déjà
     val checkStmt = connection.prepareStatement("SELECT balance FROM user_accounts WHERE user_id = ?")
     checkStmt.setInt(1, userId)
     val rs = checkStmt.executeQuery()
     if (rs.next()) {
-      // Mettre à jour le solde existant
       val updateStmt = connection.prepareStatement("UPDATE user_accounts SET balance = balance + ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?")
       updateStmt.setBigDecimal(1, amount.underlying())
       updateStmt.setInt(2, userId)
       updateStmt.executeUpdate()
     } else {
-      // Créer une nouvelle entrée pour l'utilisateur
       val insertStmt = connection.prepareStatement("INSERT INTO user_accounts (user_id, balance) VALUES (?, ?)")
       insertStmt.setInt(1, userId)
       insertStmt.setBigDecimal(2, amount.underlying())
@@ -47,12 +44,11 @@ class UserAccountRepository(dbUrl: String, dbUser: String, dbPassword: String) {
     val connection = getConnection()
     connection.setAutoCommit(false)
     try {
-      // Lire le solde actuel
       val selectStmt = connection.prepareStatement("SELECT balance FROM user_accounts WHERE user_id = ? FOR UPDATE")
       selectStmt.setInt(1, userId)
       val rs = selectStmt.executeQuery()
       val sufficientFunds = if (rs.next()) {
-        val currentBalance = rs.getBigDecimal("balance")
+        val currentBalance = BigDecimal(rs.getBigDecimal("balance"))
         currentBalance.compareTo(amount.underlying()) >= 0
       } else false
 

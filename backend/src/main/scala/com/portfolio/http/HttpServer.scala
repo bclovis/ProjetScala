@@ -134,6 +134,20 @@ object HttpServer {
                 }
               }
             } ~
+            // Endpoint pour récupérer le solde du wallet (fonds déposés)
+            path("wallet-balance") {
+              get {
+                headerValueByName("Authorization") { token =>
+                  val userId = decodeUserIdFromToken(token)
+                  onComplete(userAccountRepo.getBalance(userId)) {
+                    case scala.util.Success(balance) =>
+                      complete(HttpResponse(StatusCodes.OK, entity = s"""{"walletBalance": "$balance"}"""))
+                    case scala.util.Failure(ex) =>
+                      complete(HttpResponse(StatusCodes.InternalServerError, entity = s"Erreur: ${ex.getMessage}"))
+                  }
+                }
+              }
+            } ~
             // GET des portefeuilles
             path("portfolios") {
               get {
