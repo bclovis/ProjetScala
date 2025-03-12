@@ -1,4 +1,3 @@
-//backend/src/main/scala/com/portfolio/http/HttpServer.scala
 package com.portfolio.http
 
 import akka.actor.typed.ActorSystem
@@ -19,18 +18,18 @@ import scala.concurrent.duration._
 import io.circe.syntax._
 import io.circe.generic.auto._
 import io.circe.parser._
-import com.portfolio.db.repositories.{PortfolioRepository, AssetRepository, PerformanceRepository, MarketDataRepository}
+import com.portfolio.db.repositories.{PortfolioRepository, AssetRepository, PerformanceRepository, MarketDataRepository, UserAccountRepository}
 import com.portfolio.actors.MarketDataActor
 import com.portfolio.models.MarketData
 import akka.actor.typed.Scheduler
 import com.portfolio.services.AccountSummaryService
-// Fix: Import receptionist
 import akka.actor.typed.receptionist.{Receptionist, ServiceKey}
 import com.portfolio.services.BalanceService
 
 // Classes d'aide pour le parsing JSON
 case class Credentials(email: String, password: String)
 case class AssetData(assetType: String, symbol: String, quantity: BigDecimal, avgBuyPrice: BigDecimal)
+case class DepositData(amount: BigDecimal)
 
 object HttpServer {
 
@@ -44,28 +43,20 @@ object HttpServer {
   val assetRepo       = new AssetRepository(dbUrl, dbUser, dbPassword)
   val performanceRepo = new PerformanceRepository(dbUrl, dbUser, dbPassword)
   val marketDataRepo  = new MarketDataRepository(dbUrl, dbUser, dbPassword)
-
+  // Nouveau repository pour le wallet (user_accounts)
+  val userAccountRepo = new UserAccountRepository(dbUrl, dbUser, dbPassword)
 
   // Création d'un unique système d'acteurs typé avec racine
-  // FIX: Change Nothing to Any for proper variance handling
   val rootBehavior = Behaviors.setup[Any] { context =>
-    // Création de l'acteur MarketDataActor via spawn du contexte
     val marketDataActor = context.spawn(MarketDataActor(), "marketDataActor")
-
-    // Exposer l'acteur via une extension pour y accéder ailleurs
-    context.system.receptionist ! akka.actor.typed.receptionist.Receptionist.Register(
+    context.system.receptionist ! Receptionist.Register(
       ServiceKey[MarketDataActor.Command]("marketDataActor"),
       marketDataActor
     )
-
     Behaviors.empty
   }
 
-  // FIX: Change ActorSystem type parameter from Nothing to Any
   val system: ActorSystem[Any] = ActorSystem(rootBehavior, "AkkaSystem")
-
-  // Conversion du système typé en système classique pour HTTP
-  // Fix: Add explicit type
   implicit val classicSystem: akka.actor.ActorSystem = system.toClassic
   implicit val materializer: Materializer = Materializer(system)
   implicit val timeout: Timeout = Timeout(5.seconds)
@@ -74,7 +65,6 @@ object HttpServer {
   val balanceService = new BalanceService(portfolioRepo, assetRepo)(classicSystem, system.executionContext)
   val accountSummaryService = new AccountSummaryService(portfolioRepo, assetRepo)(classicSystem, system.executionContext)
 
-  // Récupération de l'acteur MarketDataActor via receptionist
   val marketDataActorKey = ServiceKey[MarketDataActor.Command]("marketDataActor")
   var marketDataActor: Option[akka.actor.typed.ActorRef[MarketDataActor.Command]] = None
 
@@ -93,12 +83,10 @@ object HttpServer {
   ))
 
   def main(args: Array[String]): Unit = {
-    // Attendre que l'acteur soit disponible avant de démarrer le serveur
     while(marketDataActor.isEmpty) {
       Thread.sleep(100)
     }
 
-    // Endpoints REST
     val restRoute =
       pathPrefix("api") {
         respondWithHeaders(
@@ -122,6 +110,26 @@ object HttpServer {
                         complete(HttpResponse(StatusCodes.Unauthorized, entity = """{"message": "Email ou mot de passe incorrect"}"""))
                     case scala.util.Failure(ex) =>
                       complete(HttpResponse(StatusCodes.InternalServerError, entity = s"Erreur de connexion: ${ex.getMessage}"))
+                  }
+                }
+              }
+            } ~
+            // Endpoint pour approvisionner le compte
+            path("deposit") {
+              post {
+                headerValueByName("Authorization") { token =>
+                  val userId = decodeUserIdFromToken(token)
+                  entity(as[String]) { depositJson =>
+                    // Parse du JSON pour obtenir le montant à déposer
+                    val amount = parse(depositJson)
+                      .flatMap(_.hcursor.downField("amount").as[BigDecimal])
+                      .getOrElse(BigDecimal(0))
+                    onComplete(userAccountRepo.deposit(userId, amount)) {
+                      case scala.util.Success(_) =>
+                        complete(HttpResponse(StatusCodes.OK, entity = s"""{"message": "Dépôt réussi", "amount": "$amount"}"""))
+                      case scala.util.Failure(ex) =>
+                        complete(HttpResponse(StatusCodes.InternalServerError, entity = s"Erreur: ${ex.getMessage}"))
+                    }
                   }
                 }
               }
@@ -170,15 +178,25 @@ object HttpServer {
                 }
               }
             } ~
-            // POST ajout d'un actif dans un portefeuille
+            // POST ajout d'un actif dans un portefeuille avec vérification du solde
             path("portfolios" / IntNumber / "assets") { portfolioId =>
               post {
                 entity(as[String]) { assetJson =>
                   headerValueByName("Authorization") { token =>
+                    val userId = decodeUserIdFromToken(token)
                     val assetData = parseAssetData(assetJson)
-                    onComplete(assetRepo.addAssetToPortfolio(portfolioId, assetData.assetType, assetData.symbol, assetData.quantity, assetData.avgBuyPrice)) {
-                      case scala.util.Success(_) =>
-                        complete(HttpResponse(StatusCodes.Created, entity = """{"message": "Asset added successfully"}"""))
+                    // Calcul du coût d'achat
+                    val cost = assetData.quantity * assetData.avgBuyPrice
+                    onComplete(userAccountRepo.debit(userId, cost)) {
+                      case scala.util.Success(true) =>
+                        onComplete(assetRepo.addAssetToPortfolio(portfolioId, assetData.assetType, assetData.symbol, assetData.quantity, assetData.avgBuyPrice)) {
+                          case scala.util.Success(_) =>
+                            complete(HttpResponse(StatusCodes.Created, entity = """{"message": "Actif ajouté et compte débité avec succès"}"""))
+                          case scala.util.Failure(ex) =>
+                            complete(HttpResponse(StatusCodes.InternalServerError, entity = s"Erreur lors de l'ajout de l'actif: ${ex.getMessage}"))
+                        }
+                      case scala.util.Success(false) =>
+                        complete(HttpResponse(StatusCodes.BadRequest, entity = """{"message": "Solde insuffisant pour réaliser l'achat"}"""))
                       case scala.util.Failure(ex) =>
                         complete(HttpResponse(StatusCodes.InternalServerError, entity = s"Erreur: ${ex.getMessage}"))
                     }
@@ -228,21 +246,17 @@ object HttpServer {
         }
       }
 
-    // WebSocket pour diffuser les données de marché en temps réel via Yahoo
     val webSocketRoute =
       path("market-data") {
         handleWebSocketMessages(marketDataFlow)
       }
 
-    // Combinaison des routes REST et WebSocket
     val route = restRoute ~ webSocketRoute
 
-    // FIX: Update to the newer Http().newServerAt() API
     Http()(classicSystem).newServerAt("localhost", 8080).bind(route)
     println("Server started at http://localhost:8080")
   }
 
-  // Flow WebSocket : toutes les 30 secondes, demande à MarketDataActor les données et les renvoie en JSON
   def marketDataFlow: Flow[Message, Message, _] = {
     val source: Source[Message, _] = Source
       .tick(0.seconds, 30.seconds, "tick")
@@ -256,7 +270,6 @@ object HttpServer {
     Flow.fromSinkAndSource(Sink.ignore, source)
   }
 
-  // Fonction d'authentification "dummy"
   def authenticate(email: String, password: String): Future[Boolean] = Future {
     email.nonEmpty && password.nonEmpty
   }
@@ -271,7 +284,6 @@ object HttpServer {
     }
   }
 
-  // Dummy token decoder (à remplacer par une vraie logique de décodage JWT)
   def decodeUserIdFromToken(token: String): Int = 1
 
   def parsePortfolioName(json: String): String = {
