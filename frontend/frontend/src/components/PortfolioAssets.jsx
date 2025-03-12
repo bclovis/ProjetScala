@@ -23,7 +23,7 @@ const PortfolioAssets = ({ portfolioId, token }) => {
 
     return (
         <div className="portfolio-assets">
-            <h3>Actifs du portefeuille #{portfolioId}</h3>
+            <h3>Actifs du portefeuille </h3>
             {error && <p className="error">{error}</p>}
             {assets.length === 0 ? (
                 <p>Aucun actif trouvé.</p>

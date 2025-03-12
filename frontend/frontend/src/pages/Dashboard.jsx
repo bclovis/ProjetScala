@@ -180,7 +180,6 @@ const Dashboard = () => {
                 {/* Zone B : Portfolio List & Performance Details */}
                 <div style={{ gridArea: "b", background: "#d0d0d0", padding: "10px" }}>
                     <div className="portfolio-header flex justify-between items-center mb-4">
-                        <h2 className="text-xl font-bold">Mes portefeuilles</h2>
                         <button onClick={handleCreatePortfolio} className="text-xl font-bold px-2 py-1 bg-green-500 text-white rounded">
                             +
                         </button>
@@ -191,7 +190,6 @@ const Dashboard = () => {
                         selectedPortfolioId={selectedPortfolio}
                     />
                     <div className="portfolios-section mt-4">
-                        <h2 className="text-xl font-bold mb-2">Détail du Portefeuille</h2>
                         <div className="portfolio-content flex flex-col md:flex-row">
                             <div className="portfolio-chart-container flex-1 p-2">
                                 {performanceData ? (
@@ -202,7 +200,6 @@ const Dashboard = () => {
                             </div>
                             <div className="portfolio-assets-container flex-1 p-2">
                                 <div className="portfolio-assets-header flex justify-between items-center mb-2">
-                                    <h3 className="text-lg font-bold">Actifs du portefeuille</h3>
                                     <button onClick={handleAddAsset}
                                             className="text-xl font-bold px-2 py-1 bg-green-500 text-white rounded">
                                         +
