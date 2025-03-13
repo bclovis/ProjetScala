@@ -1,28 +1,50 @@
-import React, { useState, useEffect } from 'react';
+//frontend/src/components/MarketData.jsx
+// frontend/src/components/MarketData.jsx
+import React, { useState, useEffect, useRef } from 'react';
 import { Line } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
-import '../styles/MarketData.css';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
 function MarketDashboard() {
     const [marketData, setMarketData] = useState({ stocks: [], crypto: {}, forex: {} });
     const [selectedAsset, setSelectedAsset] = useState(null);
-    const [selectedCategory, setSelectedCategory] = useState('crypto'); // Catégorie par défaut (crypto)
-    const [isGraphVisible, setIsGraphVisible] = useState(false); // Nouveau state pour basculer entre la carte et le graphique
+    const [selectedCategory, setSelectedCategory] = useState('crypto'); // Catégorie par défaut
+    const [isGraphVisible, setIsGraphVisible] = useState(false);
+    const socketRef = useRef(null);
+
+    const connectWebSocket = () => {
+        const socket = new WebSocket('ws://localhost:8080/market-data');
+        socket.onopen = () => {
+            console.log('WebSocket connecté');
+        };
+        socket.onmessage = (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                console.log('Données reçues :', data);
+                setMarketData(data);
+            } catch (error) {
+                console.error("Erreur de parsing JSON :", error);
+            }
+        };
+        socket.onerror = (err) => {
+            console.error("Erreur WebSocket :", err);
+            socket.close();
+        };
+        socket.onclose = (e) => {
+            console.log('WebSocket fermé. Nouvelle tentative dans 3 secondes.', e.reason);
+            setTimeout(connectWebSocket, 3000);
+        };
+        socketRef.current = socket;
+    };
 
     useEffect(() => {
-        const socket = new WebSocket('ws://localhost:8080/market-data');
-
-        socket.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-            console.log('Données reçues :', data);
-
-            setMarketData(data);
+        connectWebSocket();
+        return () => {
+            if (socketRef.current) {
+                socketRef.current.close();
+            }
         };
-
-        //return () => socket.close();
-        return;
     }, []);
 
     const generateChartData = (assetData, label) => ({
@@ -37,27 +59,20 @@ function MarketDashboard() {
         }],
     });
 
-    // Options pour masquer la légende et les valeurs des abscisses
     const chartOptions = {
         responsive: true,
         plugins: {
-            legend: {
-                display: false,  // Masquer la légende
-            },
+            legend: { display: false },
         },
         scales: {
-            x: {
-                display: false,  // Masquer les valeurs sur l'axe des abscisses
-            },
+            x: { display: false },
         },
     };
 
     const handleAssetClick = (asset) => {
         if (selectedAsset === asset) {
-            // Si l'actif est déjà sélectionné, alterne l'affichage entre la carte et le graphique
             setIsGraphVisible(!isGraphVisible);
         } else {
-            // Sinon, sélectionne un nouvel actif et affiche son graphique
             setSelectedAsset(asset);
             setIsGraphVisible(true);
         }
@@ -65,19 +80,14 @@ function MarketDashboard() {
 
     const handleCategoryChange = (category) => {
         setSelectedCategory(category);
-        setSelectedAsset(null); // Réinitialiser la sélection d'actif lors du changement de catégorie
-        setIsGraphVisible(false); // Masquer le graphique si on change de catégorie
+        setSelectedAsset(null);
+        setIsGraphVisible(false);
     };
 
-    // Fonction pour obtenir les données de la catégorie sélectionnée
     const getCategoryData = () => {
-        if (selectedCategory === 'crypto') {
-            return marketData.crypto;
-        } else if (selectedCategory === 'forex') {
-            return marketData.forex;
-        } else {
-            return marketData.stocks;
-        }
+        if (selectedCategory === 'crypto') return marketData.crypto;
+        if (selectedCategory === 'forex') return marketData.forex;
+        return marketData.stocks;
     };
 
     return (
@@ -105,7 +115,6 @@ function MarketDashboard() {
                 </div>
             </div>
 
-            {/* Conteneur des cartes */}
             <div className="cards-container">
                 <div className="scroll-container">
                     {Object.entries(getCategoryData()).map(([symbol, data]) => (
@@ -114,9 +123,9 @@ function MarketDashboard() {
                                 <div className="chart-container" style={{ width: '200px', height: '150px' }}>
                                     <Line
                                         data={generateChartData(data, `${data.symbol} (${data.assetType})`)}
-                                        options={chartOptions} // Appliquer les options pour masquer la légende et les valeurs d'abscisse
-                                        width={200}  // Largeur du graphique
-                                        height={150} // Hauteur du graphique
+                                        options={chartOptions}
+                                        width={200}
+                                        height={150}
                                     />
                                 </div>
                             ) : (

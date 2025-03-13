@@ -1,3 +1,4 @@
+//frontend/src/components/AddAsset.jsx.jsx
 import React, { useState } from "react";
 import PropTypes from "prop-types";
 

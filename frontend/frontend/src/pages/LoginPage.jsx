@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '@fortawesome/fontawesome-free/css/all.min.css';
-import '../styles/LoginPage.css'; // Assurez-vous que ce fichier contient les styles inspirés du GitHub fourni
+//import '../styles/LoginPage.css'; // Assurez-vous que ce fichier contient les styles inspirés du GitHub fourni
 
 const LoginPage = () => {
     const [isActive, setIsActive] = useState(false); // false = mode Sign In, true = mode Sign Up

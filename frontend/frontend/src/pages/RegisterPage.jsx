@@ -1,6 +1,7 @@
+//frontend/src/pages/RegisterPage.jsx
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import '../styles/LoginPage.css'; // ✅ Réutilisation du CSS de LoginPage
+//import '../styles/LoginPage.css'; // ✅ Réutilisation du CSS de LoginPage
 import logo from '../assets/Logo.png';
 
 const RegisterPage = () => {

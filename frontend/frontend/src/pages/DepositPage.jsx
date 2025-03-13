@@ -1,6 +1,7 @@
+//frontend/src/pages/DepositPage.jsx
 import React, { useState } from "react";
 import Header from "../components/Header";
-import "../styles/LoginPage.css"; // Réutilise le style du Login
+//import "../styles/LoginPage.css"; // Réutilise le style du Login
 
 const DepositPage = () => {
     const [amount, setAmount] = useState("");
