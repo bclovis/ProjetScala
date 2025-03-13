@@ -1,4 +1,4 @@
-//frontend/src/components/AccountSummaryChart.jsx.jsx
+//frontend/src/components/AccountSummaryChart.jsx
 
 import React from "react";
 import { Pie } from "react-chartjs-2";
