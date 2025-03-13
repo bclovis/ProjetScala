@@ -1,8 +1,8 @@
 // frontend/src/pages/LoginPage.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '@fortawesome/fontawesome-free/css/all.min.css';
-import '../styles/LoginPage.css'; // Assurez-vous que ce fichier contient les styles inspirés du GitHub fourni
+//import '../styles/LoginPage.css'; // Assurez-vous que ce fichier contient les styles inspirés du GitHub fourni
 
 const LoginPage = () => {
     const [isActive, setIsActive] = useState(false); // false = mode Sign In, true = mode Sign Up
@@ -10,6 +10,13 @@ const LoginPage = () => {
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
     const navigate = useNavigate();
+
+    useEffect(() => {
+        const token = localStorage.getItem("token");
+        if (token) {
+            navigate("/dashboard"); // ✅ Redirige vers /dashboard s'il est déjà connecté
+        }
+    }, []);
 
     const handleLogin = async (e) => {
         e.preventDefault();
@@ -92,7 +99,7 @@ const LoginPage = () => {
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                         />
-                        <a href="#">Forget Your Password?</a>
+                        <a href="/">Forget Your Password?</a>
                         <button type="submit">Sign In</button>
                     </form>
                 </div>
@@ -108,7 +115,7 @@ const LoginPage = () => {
                         <div className="toggle-panel toggle-right">
                             <h1>Hello, Friend!</h1>
                             <p>Register with your email and password to get started</p>
-                            <button className="hidden" onClick={() => setIsActive(true)}>Sign Up</button>
+                            <button className="nav-button" onClick={() => navigate('/register')}>Nouveau</button>
                         </div>
                     </div>
                 </div>

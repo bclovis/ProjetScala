@@ -1,8 +1,9 @@
+//frontend/src/pages/AddAssetPage.jsx
 import React from "react";
 import { useLocation } from "react-router-dom";
-import AddAsset from "../components/AddAsset";
+import AddAsset from "../components/actifs/AddAsset.jsx";
 import Header from "../components/Header";
-import "../styles/LoginPage.css"; // Réutilise le style du Login
+//import "../styles/LoginPage.css"; // Réutilise le style du Login
 
 const AddAssetPage = () => {
     const location = useLocation();

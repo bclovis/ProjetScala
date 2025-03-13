@@ -1,7 +1,5 @@
-//backend/src/main/scala/com/portfolio/actors/MarketDataActor.scala
+// backend/src/main/scala/com/portfolio/actors/MarketDataActor.scala
 package com.portfolio.actors
-
-
 
 import akka.actor.typed.{ActorRef, Behavior}
 import akka.actor.typed.scaladsl.{Behaviors, ActorContext}
@@ -13,7 +11,7 @@ import io.circe.parser._
 import com.portfolio.models.{MarketData, MarketPoint, MarketPrice}
 import akka.stream.Materializer
 import scala.concurrent.ExecutionContext
-// Add this import
+import akka.util.Timeout
 import akka.actor.typed.scaladsl.adapter._
 
 object MarketDataActor {
@@ -25,6 +23,9 @@ object MarketDataActor {
   def apply(): Behavior[Command] = Behaviors.receive { (context, message) =>
     implicit val ec: ExecutionContext = context.executionContext
     implicit val mat: Materializer = Materializer(context.system)
+    // Ajout de l'implicite timeout pour les opérations asynchrones
+    implicit val timeout: Timeout = Timeout(10.seconds)
+
     message match {
       case GetMarketData(replyTo) =>
         fetchMarketData(context).onComplete {

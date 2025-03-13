@@ -1,7 +1,7 @@
+//frontend/src/pages/CreatePortfolioPage.jsx
 import React from "react";
-import CreatePortfolio from "../components/CreatePortfolio";
-import Header from "../components/Header";
-import "../styles/LoginPage.css"; // Réutilise le style du Login
+import CreatePortfolio from "../components/portfolio/CreatePortfolio.jsx";
+//import "../styles/LoginPage.css"; // Réutilise le style du Login
 
 const CreatePortfolioPage = () => {
     const handlePortfolioCreated = () => {

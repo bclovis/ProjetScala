@@ -36,5 +36,6 @@ libraryDependencies ++= Seq(
   // Config (application.conf)
   "com.typesafe" % "config" % "1.4.1",
   "com.auth0" % "java-jwt" % "3.18.2",  // JWT pour l'authentification
-  "at.favre.lib" % "bcrypt" % "0.9.0"   // bcrypt pour le hashage des mots de passe
+  "at.favre.lib" % "bcrypt" % "0.9.0",   // bcrypt pour le hashage des mots de passe
+  "com.zaxxer" % "HikariCP" % "5.0.1"
 )
