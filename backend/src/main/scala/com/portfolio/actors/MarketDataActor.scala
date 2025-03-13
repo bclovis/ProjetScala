@@ -1,7 +1,5 @@
-//backend/src/main/scala/com/portfolio/actors/MarketDataActor.scala
+// backend/src/main/scala/com/portfolio/actors/MarketDataActor.scala
 package com.portfolio.actors
-
-
 
 import akka.actor.typed.{ActorRef, Behavior}
 import akka.actor.typed.scaladsl.{Behaviors, ActorContext}
@@ -13,7 +11,7 @@ import io.circe.parser._
 import com.portfolio.models.{MarketData, MarketPoint, MarketPrice}
 import akka.stream.Materializer
 import scala.concurrent.ExecutionContext
-// Add this import
+import akka.util.Timeout
 import akka.actor.typed.scaladsl.adapter._
 
 object MarketDataActor {
@@ -25,6 +23,9 @@ object MarketDataActor {
   def apply(): Behavior[Command] = Behaviors.receive { (context, message) =>
     implicit val ec: ExecutionContext = context.executionContext
     implicit val mat: Materializer = Materializer(context.system)
+    // Ajout de l'implicite timeout pour les opérations asynchrones
+    implicit val timeout: Timeout = Timeout(10.seconds)
+
     message match {
       case GetMarketData(replyTo) =>
         fetchMarketData(context).onComplete {
@@ -40,9 +41,6 @@ object MarketDataActor {
 
   def fetchMarketData(context: ActorContext[Command])
                      (implicit ec: ExecutionContext, mat: Materializer): Future[MarketData] = {
-    /*val stockSymbols  = List("AAPL", "GOOGL")
-    val cryptoSymbols = List("BTC-EUR", "ETH-EUR", "ADA-EUR", "XRP-EUR", "SOL-EUR", "LTC-EUR", "DOGE-EUR", "BNB-EUR", "MATIC-EUR", "DOT-EUR")
-    val forexSymbols  = List("USDEUR=X", "GBPEUR=X", "JPYEUR=X", "CHFEUR=X", "CADEUR=X", "AUDEUR=X", "NZDEUR=X", "SEKEUR=X")*/
     val stockSymbols = List("AAPL", "GOOGL", "AMZN", "MSFT", "TSLA", "META", "NVDA", "NFLX")
     val cryptoSymbols = List("BTC-USD", "ETH-USD", "ADA-USD", "XRP-USD", "SOL-USD", "LTC-USD", "DOGE-USD", "BNB-USD", "MATIC-USD", "DOT-USD")
     val forexSymbols  = List("EURUSD=X", "GBPUSD=X", "JPYUSD=X", "CHFUSD=X", "CADUSD=X", "AUDUSD=X", "NZDUSD=X", "SEKUSD=X")

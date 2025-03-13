@@ -1,76 +1,79 @@
-//backend/src/main/scala/com/portfolio/Database.scala
 package com.portfolio
 
-import java.sql.{Connection, DriverManager, ResultSet}
+import com.zaxxer.hikari.{HikariConfig, HikariDataSource}
+import java.sql.Connection
 import scala.concurrent.{Future, ExecutionContext}
-import scala.util.{Failure, Success}
 
 object Database {
 
-  // Paramètres de connexion à PostgreSQL
-  val url = "jdbc:postgresql://localhost:5432/portfolio_db"
-  val user = "elouanekoka"
-  val password = "postgres"
-  val driver = "org.postgresql.Driver"
+  // Configuration de HikariCP
+  private val config = new HikariConfig()
+  config.setJdbcUrl("jdbc:postgresql://localhost:5432/portfolio_db")
+  config.setUsername("elouanekoka")
+  config.setPassword("postgres")
+  config.setDriverClassName("org.postgresql.Driver")
+  config.addDataSourceProperty("cachePrepStmts", "true")
+  config.addDataSourceProperty("prepStmtCacheSize", "250")
+  config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048")
 
-  // Charger le driver PostgreSQL
-  Class.forName(driver)
+  private val dataSource = new HikariDataSource(config)
 
-  // Créer la connexion JDBC
-  def getConnection(): Connection = {
-    DriverManager.getConnection(url, user, password)
-  }
+  def getConnection(): Connection = dataSource.getConnection()
 
-  // Tester la connexion en exécutant une requête simple
-  def testConnection()(implicit ec: ExecutionContext): Future[Unit] = {
-    Future {
-      val connection = getConnection()
+  def close(): Unit = dataSource.close()
+
+  def testConnection()(implicit ec: ExecutionContext): Future[Unit] = Future {
+    val connection = getConnection()
+    try {
       val stmt = connection.createStatement()
       val rs = stmt.executeQuery("SELECT 1")
       while (rs.next()) {
         println(s"Connexion réussie, résultat : ${rs.getInt(1)}")
       }
+      rs.close()
+      stmt.close()
+    } finally {
       connection.close()
-    }.recover {
-      case ex => println(s"Erreur de connexion à PostgreSQL : ${ex.getMessage}")
     }
   }
 
-  // Vérifier l'utilisateur et le mot de passe
-  def checkUserCredentials(email: String, password: String)(implicit ec: ExecutionContext): Future[Boolean] = {
-    Future {
-      val connection = getConnection()
+  def checkUserCredentials(email: String, password: String)(implicit ec: ExecutionContext): Future[Boolean] = Future {
+    val connection = getConnection()
+    try {
       val stmt = connection.prepareStatement("SELECT password_hash FROM users WHERE email = ?")
       stmt.setString(1, email)
       val rs = stmt.executeQuery()
-      if (rs.next()) {
+      val result = if (rs.next()) {
         val storedPassword = rs.getString("password_hash")
-        if (storedPassword == password) {
-          connection.close()
-          true
-        } else {
-          connection.close()
-          false
-        }
-      } else {
-        connection.close()
-        false
-      }
-    }.recover {
-      case ex =>
-        println(s"Erreur lors de la connexion : ${ex.getMessage}")
-        false
+        storedPassword == password
+      } else false
+      rs.close()
+      stmt.close()
+      result
+    } finally {
+      connection.close()
     }
   }
 
-  // Récupérer tous les portefeuilles de l'utilisateur
-  def getPortfolios(userId: Int)(implicit ec: ExecutionContext): Future[List[Portfolio]] = {
-    Future {
-      val connection = getConnection()
+  // Définition des case classes pour Portfolio et Asset
+  case class Portfolio(id: Int, userId: Int, name: String, createdAt: java.time.LocalDateTime)
+  case class Asset(
+                    id: Int,
+                    portfolioId: Int,
+                    assetType: String,
+                    symbol: String,
+                    quantity: BigDecimal,
+                    avgBuyPrice: BigDecimal,
+                    createdAt: java.time.LocalDateTime
+                  )
+
+  def getPortfolios(userId: Int)(implicit ec: ExecutionContext): Future[List[Portfolio]] = Future {
+    val connection = getConnection()
+    try {
       val stmt = connection.prepareStatement("SELECT * FROM portfolios WHERE user_id = ?")
       stmt.setInt(1, userId)
       val rs = stmt.executeQuery()
-      var portfolios = List[Portfolio]()
+      var portfolios = List.empty[Portfolio]
       while (rs.next()) {
         portfolios = portfolios :+ Portfolio(
           rs.getInt("id"),
@@ -79,32 +82,44 @@ object Database {
           rs.getTimestamp("created_at").toLocalDateTime
         )
       }
-      connection.close()
+      rs.close()
+      stmt.close()
       portfolios
+    } finally {
+      connection.close()
     }
   }
 
-  // Créer un nouveau portefeuille
-  def createPortfolio(userId: Int, name: String)(implicit ec: ExecutionContext): Future[Portfolio] = {
-    Future {
-      val connection = getConnection()
-      val stmt = connection.prepareStatement("INSERT INTO portfolios (user_id, name) VALUES (?, ?)",
-        java.sql.Statement.RETURN_GENERATED_KEYS)
+  def createPortfolio(userId: Int, name: String)(implicit ec: ExecutionContext): Future[Portfolio] = Future {
+    val connection = getConnection()
+    try {
+      val stmt = connection.prepareStatement(
+        "INSERT INTO portfolios (user_id, name) VALUES (?, ?)",
+        java.sql.Statement.RETURN_GENERATED_KEYS
+      )
       stmt.setInt(1, userId)
       stmt.setString(2, name)
       stmt.executeUpdate()
-      val rs = stmt.getGeneratedKeys()
+      val rs = stmt.getGeneratedKeys
       rs.next()
       val portfolio = Portfolio(rs.getInt(1), userId, name, java.time.LocalDateTime.now())
-      connection.close()
+      rs.close()
+      stmt.close()
       portfolio
+    } finally {
+      connection.close()
     }
   }
 
-  // Ajouter un actif à un portefeuille
-  def addAssetToPortfolio(portfolioId: Int, assetType: String, symbol: String, quantity: BigDecimal, avgBuyPrice: BigDecimal)(implicit ec: ExecutionContext): Future[Unit] = {
-    Future {
-      val connection = getConnection()
+  def addAssetToPortfolio(
+                           portfolioId: Int,
+                           assetType: String,
+                           symbol: String,
+                           quantity: BigDecimal,
+                           avgBuyPrice: BigDecimal
+                         )(implicit ec: ExecutionContext): Future[Unit] = Future {
+    val connection = getConnection()
+    try {
       val stmt = connection.prepareStatement(
         "INSERT INTO portfolio_assets (portfolio_id, asset_type, symbol, quantity, avg_buy_price) VALUES (?, ?, ?, ?, ?)"
       )
@@ -114,18 +129,19 @@ object Database {
       stmt.setBigDecimal(4, quantity.underlying())
       stmt.setBigDecimal(5, avgBuyPrice.underlying())
       stmt.executeUpdate()
+      stmt.close()
+    } finally {
       connection.close()
     }
   }
 
-  // Récupérer les actifs d'un portefeuille
-  def getAssetsForPortfolio(portfolioId: Int)(implicit ec: ExecutionContext): Future[List[Asset]] = {
-    Future {
-      val connection = getConnection()
+  def getAssetsForPortfolio(portfolioId: Int)(implicit ec: ExecutionContext): Future[List[Asset]] = Future {
+    val connection = getConnection()
+    try {
       val stmt = connection.prepareStatement("SELECT * FROM portfolio_assets WHERE portfolio_id = ?")
       stmt.setInt(1, portfolioId)
       val rs = stmt.executeQuery()
-      var assets = List[Asset]()
+      var assets = List.empty[Asset]
       while (rs.next()) {
         assets = assets :+ Asset(
           rs.getInt("id"),
@@ -137,14 +153,11 @@ object Database {
           rs.getTimestamp("created_at").toLocalDateTime
         )
       }
-      connection.close()
+      rs.close()
+      stmt.close()
       assets
+    } finally {
+      connection.close()
     }
   }
-
-  // Case class pour un portefeuille
-  case class Portfolio(id: Int, userId: Int, name: String, createdAt: java.time.LocalDateTime)
-
-  // Case class pour un actif
-  case class Asset(id: Int, portfolioId: Int, assetType: String, symbol: String, quantity: BigDecimal, avgBuyPrice: BigDecimal, createdAt: java.time.LocalDateTime)
 }
