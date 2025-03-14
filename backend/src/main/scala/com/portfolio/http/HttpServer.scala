@@ -1,5 +1,6 @@
 package com.portfolio.http
 
+import scala.util.{Success, Failure}
 import akka.pattern.ask
 import akka.util.Timeout
 import scala.concurrent.Future
@@ -70,7 +71,7 @@ object HttpServer {
 
   // Configuration de la base de données
   val dbUrl = "jdbc:postgresql://localhost:5432/portfolio_db"
-  val dbUser = "elouanekoka"
+  val dbUser = "postgres"
   val dbPassword = "postgres"
 
   // Instanciation des repositories
@@ -518,7 +519,43 @@ object HttpServer {
       case Left(_) => None
     }
   }
-  def decodeUserIdFromToken(token: String): Int = 1
+  // def decodeUserIdFromToken(token: String): Int = 1
+
+  import pdi.jwt.{Jwt, JwtAlgorithm, JwtClaim}
+  import io.circe.parser._
+
+  def decodeUserIdFromToken(token: String): Int = {
+    try {
+      // Supprime "Bearer " du token si présent
+      val jwtToken = token.replace("Bearer ", "")
+
+      // Décode le JWT
+      Jwt.decode(jwtToken, "super-secret-key", Seq(JwtAlgorithm.HS256)) match {
+        case Success(claim) =>
+          // Parse le contenu du JWT
+          parse(claim.content) match {
+            case Right(json) =>
+              json.hcursor.downField("userId").as[Int] match {
+                case Right(userId) => userId
+                case Left(_) => 
+                  println("[ERROR] Impossible d'extraire userId du token")
+                  -1
+              }
+            case Left(_) => 
+              println("[ERROR] Impossible de parser le JWT")
+              -1
+          }
+        case Failure(_) => 
+          println("[ERROR] JWT invalide")
+          -1
+      }
+    } catch {
+      case e: Exception => 
+        println(s"[ERROR] Erreur lors du décodage du token: ${e.getMessage}")
+        -1
+    }
+  }
+
 
   def parsePortfolioName(json: String): String = {
     parse(json) match {
