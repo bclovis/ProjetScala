@@ -1,11 +1,11 @@
+// frontend/src/pages/Dashboard.jsx
 import React, { useEffect, useState } from "react";
 import { Box, useMediaQuery } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import Row1 from "@/components/Row1";
 import Row2 from "@/components/Row2";
 import Row3 from "@/components/Row3";
-
-import "@/styles/MarketData.css"
+import "@/styles/MarketData.css";
 
 const gridTemplateLargeScreens = `
   "c c c"
@@ -30,7 +30,7 @@ const Dashboard = () => {
     const navigate = useNavigate();
     const token = localStorage.getItem("token");
 
-    // Vos états pour stocker les données
+    // États pour stocker les données
     const [portfolios, setPortfolios] = useState([]);
     const [performanceData, setPerformanceData] = useState(null);
     const [globalBalance, setGlobalBalance] = useState(0);
@@ -40,8 +40,12 @@ const Dashboard = () => {
         "Attention: Mise à jour de sécurité disponible",
     ]);
     const [selectedPortfolio, setSelectedPortfolio] = useState(null);
+    const [accountSummary, setAccountSummary] = useState({
+        crypto: 0,
+        action: 0,
+        devise: 0,
+    });
 
-    // Conserver vos fonctions fetch
     const fetchPortfolios = () => {
         if (!token) {
             navigate("/login");
@@ -76,7 +80,9 @@ const Dashboard = () => {
             .then((data) => {
                 setGlobalBalance(parseFloat(data.globalBalance));
             })
-            .catch((err) => console.error("Erreur lors du chargement du solde global :", err));
+            .catch((err) =>
+                console.error("Erreur lors du chargement du solde global :", err)
+            );
     };
 
     const fetchWalletBalance = () => {
@@ -91,7 +97,9 @@ const Dashboard = () => {
             .then((data) => {
                 setWalletBalance(parseFloat(data.walletBalance));
             })
-            .catch((err) => console.error("Erreur lors du chargement du solde du wallet :", err));
+            .catch((err) =>
+                console.error("Erreur lors du chargement du solde du wallet :", err)
+            );
     };
 
     const fetchAccountSummary = () => {
@@ -104,14 +112,15 @@ const Dashboard = () => {
         })
             .then((res) => res.json())
             .then((data) => {
-                // Assurez-vous que les données soient au bon format
-                // Ici, nous attendons un objet { crypto, action, devise }
-                // Vous pouvez ajuster selon votre API
+                console.log("Résumé du compte :", data);
+                setAccountSummary(data);
             })
-            .catch((err) => console.error("Erreur lors du chargement du résumé du compte :", err));
+            .catch((err) =>
+                console.error("Erreur lors du chargement du résumé du compte :", err)
+            );
     };
 
-    // useEffect pour charger les données au montage
+    // Chargement des données au montage
     useEffect(() => {
         fetchPortfolios();
         fetchGlobalBalance();
@@ -119,7 +128,7 @@ const Dashboard = () => {
         fetchAccountSummary();
     }, [navigate, token]);
 
-    // useEffect pour charger les performances du portefeuille sélectionné
+    // Chargement des performances du portefeuille sélectionné
     useEffect(() => {
         if (selectedPortfolio) {
             fetch(`http://localhost:8080/api/portfolios/${selectedPortfolio}/performance`, {
@@ -138,7 +147,6 @@ const Dashboard = () => {
         }
     }, [selectedPortfolio, token]);
 
-
     const gridStyle = isAboveMediumScreens
         ? {
             gridTemplateColumns: "repeat(3, minmax(370px, 1fr))",
@@ -156,7 +164,6 @@ const Dashboard = () => {
         };
 
     return (
-
         <Box width="100%" height="100%" display="grid" sx={gridStyle}>
             <Row1 performanceData={performanceData} />
             <Row2
@@ -171,6 +178,7 @@ const Dashboard = () => {
                 selectedPortfolio={selectedPortfolio}
                 token={token}
                 performanceData={performanceData}
+                accountSummary={accountSummary}
             />
         </Box>
     );
