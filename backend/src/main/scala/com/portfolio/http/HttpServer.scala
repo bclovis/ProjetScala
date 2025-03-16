@@ -230,10 +230,25 @@ object HttpServer {
                     case Some(userData) =>
                       userActor match {
                         case Some(actorRef) =>
-                          val userFuture = actorRef.ask(ref => UserActor.RegisterUser(userData.username, userData.email, userData.passwordHash, ref))(timeout, scheduler)
+                          val userFuture = actorRef.ask(ref =>
+                            UserActor.RegisterUser(userData.username, userData.email, userData.passwordHash, ref)
+                          )(timeout, scheduler)
                           onComplete(userFuture) {
                             case scala.util.Success(Right(user)) =>
-                              complete(HttpResponse(StatusCodes.Created, entity = """{"message": "Utilisateur créé avec succès"}"""))
+                              // Création d'un portefeuille par défaut pour l'utilisateur
+                              val defaultPortfolioName = s"Portefeuille de ${user.username}"
+                              onComplete(portfolioRepo.createPortfolio(user.id, defaultPortfolioName)) {
+                                case scala.util.Success(portfolio) =>
+                                  complete(HttpResponse(
+                                    StatusCodes.Created,
+                                    entity = s"""{"message": "Utilisateur et portefeuille créés avec succès", "portfolioId": ${portfolio.id}}"""
+                                  ))
+                                case scala.util.Failure(ex) =>
+                                  complete(HttpResponse(
+                                    StatusCodes.InternalServerError,
+                                    entity = s"""{"message": "Utilisateur créé, mais erreur lors de la création du portefeuille: ${ex.getMessage}"}"""
+                                  ))
+                              }
                             case scala.util.Success(Left(errorMessage)) =>
                               complete(HttpResponse(StatusCodes.BadRequest, entity = s"""{"message": "$errorMessage"}"""))
                             case scala.util.Failure(ex) =>

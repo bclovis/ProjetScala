@@ -1,20 +1,27 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import PropTypes from "prop-types";
 import DashboardBox from "@/components/DashboardBox";
 import Overview from "@/components/Overview";
 import PortfolioList from "@/components/portfolio/PortfolioList";
 
-const handleCreatePortfolio = () => {
-    navigate("/create-portfolio");
-};
 const Row2 = ({ walletBalance, globalBalance, notifications, portfolios, onSelectPortfolio, selectedPortfolio }) => {
+    const navigate = useNavigate();
+
+    const handleCreatePortfolio = () => {
+        navigate("/create-portfolio");
+    };
+
     return (
         <>
             <DashboardBox gridArea="f">
-                <Overview walletBalance={walletBalance} globalBalance={globalBalance} notifications={notifications} />
+                <Overview
+                    walletBalance={walletBalance}
+                    globalBalance={globalBalance}
+                    notifications={notifications}
+                />
             </DashboardBox>
             <DashboardBox gridArea="l">
-
                 <PortfolioList
                     portfolios={portfolios}
                     onSelectPortfolio={onSelectPortfolio}

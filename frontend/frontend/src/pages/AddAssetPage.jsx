@@ -6,6 +6,8 @@ import Header from "../components/Header";
 //import "../styles/LoginPage.css"; // Réutilise le style du Login
 
 const AddAssetPage = () => {
+
+
     const location = useLocation();
     // Récupère le portfolioId passé via l'état, avec une valeur par défaut si besoin
     const portfolioId = location.state?.portfolioId || 1;

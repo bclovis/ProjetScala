@@ -6,7 +6,6 @@ import Row2 from "@/components/Row2";
 import Row3 from "@/components/Row3";
 
 import "@/styles/MarketData.css"
-import Header from "../components/Header.jsx";
 
 const gridTemplateLargeScreens = `
   "c c c"
