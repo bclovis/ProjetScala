@@ -81,7 +81,7 @@ const CoinsTable = () => {
 
   const filteredAssets = assets.filter((asset) => {
     const symbol = asset.symbol ? asset.symbol.toLowerCase() : "";
-    const name = asset.name ? asset.name.toLowerCase() : "";
+    const name = asset.longName ? asset.longName.toLowerCase() : "";
     return symbol.includes(searchTerm.toLowerCase()) || name.includes(searchTerm.toLowerCase());
   });
   

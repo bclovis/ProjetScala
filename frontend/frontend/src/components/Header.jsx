@@ -30,7 +30,7 @@ const Header = () => {
             <FlexBetween gap="0.75rem">
                 <PixIcon sx={{ fontSize: "28px" }} />
                 <Typography variant="h4" fontSize="16px">
-                    Finanseer
+                    FinTech
                 </Typography>
             </FlexBetween>
 
@@ -47,19 +47,6 @@ const Header = () => {
                         }}
                     >
                         Dashboard
-                    </Link>
-                </Box>
-                <Box sx={{ "&:hover": { color: palette.primary[100] } }}>
-                    <Link
-                        to="/predictions"
-                        onClick={() => setSelected("predictions")}
-                        style={{
-                            color: selected === "predictions" ? "inherit" : palette.grey[700],
-                            textDecoration: "none",
-                            fontWeight: selected === "predictions" ? 600 : 400,
-                        }}
-                    >
-                        Predictions
                     </Link>
                 </Box>
                 <Box sx={{ "&:hover": { color: palette.primary[100] } }}>

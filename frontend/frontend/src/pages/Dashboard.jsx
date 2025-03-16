@@ -6,6 +6,7 @@ import Row2 from "@/components/Row2";
 import Row3 from "@/components/Row3";
 
 import "@/styles/MarketData.css"
+import Header from "../components/Header.jsx";
 
 const gridTemplateLargeScreens = `
   "c c c"
@@ -138,6 +139,7 @@ const Dashboard = () => {
         }
     }, [selectedPortfolio, token]);
 
+
     const gridStyle = isAboveMediumScreens
         ? {
             gridTemplateColumns: "repeat(3, minmax(370px, 1fr))",
@@ -155,6 +157,7 @@ const Dashboard = () => {
         };
 
     return (
+
         <Box width="100%" height="100%" display="grid" sx={gridStyle}>
             <Row1 performanceData={performanceData} />
             <Row2

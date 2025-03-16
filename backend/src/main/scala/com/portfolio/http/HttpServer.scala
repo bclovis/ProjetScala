@@ -60,6 +60,7 @@ import com.portfolio.services.AccountSummaryService
 import akka.actor.typed.receptionist.{Receptionist, ServiceKey}
 import com.portfolio.services.BalanceService
 import java.time.LocalDateTime
+import org.mindrot.jbcrypt.BCrypt
 
 // Classes d'aide pour le parsing JSON
 case class Credentials(email: String, password: String)
@@ -528,7 +529,7 @@ object HttpServer {
     try {
       // Supprime "Bearer " du token si présent
       val jwtToken = token.replace("Bearer ", "")
-
+      println(s"[DEBUG] Token reçu: $jwtToken")
       // Décode le JWT
       Jwt.decode(jwtToken, "super-secret-key", Seq(JwtAlgorithm.HS256)) match {
         case Success(claim) =>
