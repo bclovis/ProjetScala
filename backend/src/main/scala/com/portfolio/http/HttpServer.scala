@@ -144,9 +144,16 @@ object HttpServer {
               .downField("open")
               .as[Seq[Double]]
               .getOrElse(Seq())
-            openPrices.reverse.find(price => !price.isNaN && price > 0.0)
-              .map(BigDecimal(_))
-              .getOrElse(BigDecimal(0))
+            // Tente de récupérer le premier prix non nul dans "open"
+            val priceFromOpenOpt: Option[Double] = openPrices.reverse.find(price => !price.isNaN && price > 0.0)
+            val price: BigDecimal = priceFromOpenOpt.map(BigDecimal(_)).getOrElse {
+              // Si aucun prix valide dans "open", utiliser regularMarketPrice
+              cursor.downField("meta").downField("regularMarketPrice").as[Double].toOption match {
+                case Some(p) if p > 0.0 => BigDecimal(p)
+                case _ => BigDecimal(0)
+              }
+            }
+            price
           case Left(_) => BigDecimal(0)
         }
       }
