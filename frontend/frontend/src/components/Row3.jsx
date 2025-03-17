@@ -15,6 +15,10 @@ const Row3 = ({ performanceData, selectedPortfolio, token, accountSummary }) => 
         navigate("/add-asset", { state: { portfolioId: selectedPortfolio } });
     };
 
+    const handleSellAsset = () => {
+        navigate("/sell-asset", { state: { portfolioId: selectedPortfolio } });
+    };
+
     return (
         <>
             <DashboardBox gridArea="v">
@@ -30,7 +34,7 @@ const Row3 = ({ performanceData, selectedPortfolio, token, accountSummary }) => 
             </DashboardBox>
             <DashboardBox gridArea="e">
                 {selectedPortfolio && (
-                    <PortfolioAssets portfolioId={selectedPortfolio} token={token} />
+                    <PortfolioAssets portfolioId={selectedPortfolio} token={token}/>
                 )}
                 <button
                     onClick={handleAddAsset}
@@ -38,9 +42,15 @@ const Row3 = ({ performanceData, selectedPortfolio, token, accountSummary }) => 
                 >
                     +
                 </button>
+                <button
+                    onClick={handleSellAsset}
+                    className="text-xl font-bold px-2 py-1 bg-green-500 text-white rounded"
+                >
+                    -
+                </button>
             </DashboardBox>
             <DashboardBox gridArea="t">
-                <TransactionHistory portfolioId={selectedPortfolio} token={token} />
+                <TransactionHistory portfolioId={selectedPortfolio} token={token}/>
             </DashboardBox>
         </>
     );

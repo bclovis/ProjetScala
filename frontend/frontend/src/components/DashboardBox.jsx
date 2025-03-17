@@ -6,7 +6,7 @@ const DashboardBox = ({ children, title, subtitle, sideText, sx, gridArea, icon 
     return (
         <Box
             sx={{
-                backgroundColor: "background.light", // Utilisez une couleur définie dans votre thème
+                backgroundColor: "grey", // Utilisez une couleur définie dans votre thème
                 p: 2,
                 borderRadius: 2,
                 boxShadow: 3,
