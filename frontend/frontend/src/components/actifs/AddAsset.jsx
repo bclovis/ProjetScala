@@ -1,4 +1,3 @@
-//frontend/src/components/AddAsset.jsx.jsx
 import React, { useState } from "react";
 import PropTypes from "prop-types";
 
@@ -10,12 +9,38 @@ const AddAsset = ({ portfolioId, token, onAssetAdded }) => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        // Normalisation des valeurs saisies
+        const normalizedAssetType = assetType.trim().toLowerCase();
+        const normalizedSymbol = symbol.trim();
+        const parsedQuantity = parseFloat(quantity);
+
+        // Validation du type d'actif
+        const validAssetTypes = ["crypto", "stock", "forex"];
+        if (!validAssetTypes.includes(normalizedAssetType)) {
+            setError("Type d'actif invalide. Utilisez 'crypto', 'stock' ou 'forex'.");
+            return;
+        }
+
+        // Validation de la longueur du symbole (VARCHAR(10))
+        if (normalizedSymbol.length > 10) {
+            setError("Le symbole ne doit pas dépasser 10 caractères.");
+            return;
+        }
+
+        // Validation de la quantité
+        if (isNaN(parsedQuantity) || parsedQuantity <= 0) {
+            setError("Quantité invalide.");
+            return;
+        }
+
         const assetData = {
-            asset_type: assetType,
-            symbol,
-            quantity: parseFloat(quantity)
-            // Le prix payé sera récupéré automatiquement côté backend
+            asset_type: normalizedAssetType,
+            symbol: normalizedSymbol,
+            quantity: parsedQuantity
         };
+
+        console.log("[DEBUG] Envoi de assetData: ", assetData);
 
         try {
             const response = await fetch(`http://localhost:8080/api/portfolios/${portfolioId}/assets`, {
@@ -28,9 +53,11 @@ const AddAsset = ({ portfolioId, token, onAssetAdded }) => {
             });
 
             if (!response.ok) {
+                const responseBody = await response.text();
+                console.error("[ERROR] Réponse de l'API:", responseBody);
                 setError("Erreur lors de l'ajout de l'actif");
             } else {
-                // Réinitialise le formulaire et informe le parent
+                // Réinitialiser le formulaire et informer le parent
                 setAssetType("");
                 setSymbol("");
                 setQuantity("");
@@ -38,6 +65,7 @@ const AddAsset = ({ portfolioId, token, onAssetAdded }) => {
                 onAssetAdded && onAssetAdded();
             }
         } catch (err) {
+            console.error("[ERROR] Exception dans handleSubmit: ", err);
             setError(err.message);
         }
     };
@@ -86,7 +114,7 @@ const AddAsset = ({ portfolioId, token, onAssetAdded }) => {
 AddAsset.propTypes = {
     portfolioId: PropTypes.number.isRequired,
     token: PropTypes.string.isRequired,
-    onAssetAdded: PropTypes.func
+    onAssetAdded: PropTypes.func,
 };
 
 export default AddAsset;

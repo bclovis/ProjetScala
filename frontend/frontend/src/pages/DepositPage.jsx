@@ -44,6 +44,7 @@ const DepositPage = () => {
                             value={amount}
                             onChange={(e) => setAmount(e.target.value)}
                             required
+                            min={0}
                         />
                         <button type="submit">Déposer</button>
                     </form>

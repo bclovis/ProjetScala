@@ -1,4 +1,3 @@
-//frontend/src/pages/App.jsx
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider, CssBaseline } from "@mui/material";
 import { createTheme } from "@mui/material/styles";
@@ -12,6 +11,7 @@ import CreatePortfolioPage from "./pages/CreatePortfolioPage";
 import DepositPage from "./pages/DepositPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Header from "./components/Header";
+import MarketPage from "./pages/MarketPage";
 
 // Définissez votre thème personnalisé
 const theme = createTheme({
@@ -52,39 +52,47 @@ const theme = createTheme({
     },
 });
 
-const token = localStorage.getItem("token");
-const App = () => (
-    <ThemeProvider theme={theme}>
-        <CssBaseline />
-        <Router>
-            {token && <Header />}
-            <Routes>
-                <Route path="/" element={<Navigate to="/login" />} />
-                <Route path="/login" element={<LoginPage />} />
-                <Route path="/register" element={<RegisterPage />} />
-                <Route
-                    path="/dashboard"
-                    element={
+const App = () => {
+    const token = localStorage.getItem("token");
+    console.log("Token:", token); // Ajoutez ce log pour vérifier le jeton
+
+    return (
+        <ThemeProvider theme={theme}>
+            <CssBaseline />
+            <Router>
+                {token && <Header />}
+                <Routes>
+                    <Route path="/" element={<Navigate to="/login" />} />
+                    <Route path="/login" element={<LoginPage />} />
+                    <Route path="/register" element={<RegisterPage />} />
+                    <Route path="/marketPage" element={
                         <ProtectedRoute>
-                            <Dashboard />
-                        </ProtectedRoute>
-                    }
-                />
-                <Route
-                    path="/market-data"
-                    element={
-                        <ProtectedRoute>
-                            <MarketDashboard />
-                        </ProtectedRoute>
-                    }
-                />
-                <Route path="/add-asset" element={<AddAssetPage />} />
-                <Route path="/sell-asset" element={<SellAssetPage />} />
-                <Route path="/create-portfolio" element={<CreatePortfolioPage />} />
-                <Route path="/deposit" element={<DepositPage />} />
-            </Routes>
-        </Router>
-    </ThemeProvider>
-);
+                        <MarketPage />
+                        </ProtectedRoute>} />
+                    <Route
+                        path="/dashboard"
+                        element={
+                            <ProtectedRoute>
+                                <Dashboard />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/market-data"
+                        element={
+                            <ProtectedRoute>
+                                <MarketDashboard />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route path="/add-asset" element={<AddAssetPage />} />
+                    <Route path="/sell-asset" element={<SellAssetPage />} />
+                    <Route path="/create-portfolio" element={<CreatePortfolioPage />} />
+                    <Route path="/deposit" element={<DepositPage />} />
+                </Routes>
+            </Router>
+        </ThemeProvider>
+    );
+};
 
 export default App;

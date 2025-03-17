@@ -30,9 +30,9 @@ const PortfolioAssets = ({ portfolioId, token }) => {
             ) : (
                 <ul>
                     {assets.map((asset) => (
-                        <li key={asset.id}>
+                        <ol key={asset.id}>
                             {asset.symbol} - {asset.quantity} ({asset.assetType})
-                        </li>
+                        </ol>
                     ))}
                 </ul>
             )}

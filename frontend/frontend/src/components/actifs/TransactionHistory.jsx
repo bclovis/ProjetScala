@@ -25,16 +25,16 @@ const TransactionHistory = ({ portfolioId, token }) => {
             <h3 className="text-xl font-bold mb-2">Historique des transactions</h3>
             {error && <p className="text-red-500">{error}</p>}
             {transactions.length === 0 ? (
-                <p>Aucune transaction enregistrée.</p>
+                <ol>Aucune transaction enregistrée.</ol>
             ) : (
                 <ul>
                     {transactions.map((tx) => (
-                        <li key={tx.id} className="mb-2 border-b pb-1">
+                        <ol key={tx.id} className="mb-2 border-b pb-1">
                             <p>
                                 <strong>{tx.txType.toUpperCase()}</strong> - {tx.symbol} : {tx.amount} à {tx.price} €
                             </p>
                             <small>{new Date(tx.createdAt).toLocaleString()}</small>
-                        </li>
+                        </ol>
                     ))}
                 </ul>
             )}

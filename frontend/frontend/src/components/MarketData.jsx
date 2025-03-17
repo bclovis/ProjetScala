@@ -47,6 +47,11 @@ function MarketDashboard() {
         };
     }, []);
 
+    useEffect(() => {
+        console.log("Données reçues pour les cryptos :", marketData.crypto); // Vérifie ici
+    }, [marketData]);
+    
+
     const generateChartData = (assetData, label) => ({
         labels: assetData.prices.map(point => new Date(point.timestamp).toLocaleTimeString()),
         datasets: [{

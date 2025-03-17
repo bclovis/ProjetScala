@@ -1,5 +1,6 @@
 package com.portfolio.http
 
+import scala.util.{Success, Failure}
 import akka.pattern.ask
 import akka.util.Timeout
 import scala.concurrent.Future
@@ -59,6 +60,7 @@ import com.portfolio.services.AccountSummaryService
 import akka.actor.typed.receptionist.{Receptionist, ServiceKey}
 import com.portfolio.services.BalanceService
 import java.time.LocalDateTime
+import org.mindrot.jbcrypt.BCrypt
 
 // Classes d'aide pour le parsing JSON
 case class Credentials(email: String, password: String)
@@ -70,7 +72,7 @@ object HttpServer {
 
   // Configuration de la base de données
   val dbUrl = "jdbc:postgresql://localhost:5432/portfolio_db"
-  val dbUser = "elouanekoka"
+  val dbUser = "postgres"
   val dbPassword = "postgres"
 
   // Instanciation des repositories
@@ -142,9 +144,16 @@ object HttpServer {
               .downField("open")
               .as[Seq[Double]]
               .getOrElse(Seq())
-            openPrices.reverse.find(price => !price.isNaN && price > 0.0)
-              .map(BigDecimal(_))
-              .getOrElse(BigDecimal(0))
+            // Tente de récupérer le premier prix non nul dans "open"
+            val priceFromOpenOpt: Option[Double] = openPrices.reverse.find(price => !price.isNaN && price > 0.0)
+            val price: BigDecimal = priceFromOpenOpt.map(BigDecimal(_)).getOrElse {
+              // Si aucun prix valide dans "open", utiliser regularMarketPrice
+              cursor.downField("meta").downField("regularMarketPrice").as[Double].toOption match {
+                case Some(p) if p > 0.0 => BigDecimal(p)
+                case _ => BigDecimal(0)
+              }
+            }
+            price
           case Left(_) => BigDecimal(0)
         }
       }
@@ -228,10 +237,25 @@ object HttpServer {
                     case Some(userData) =>
                       userActor match {
                         case Some(actorRef) =>
-                          val userFuture = actorRef.ask(ref => UserActor.RegisterUser(userData.username, userData.email, userData.passwordHash, ref))(timeout, scheduler)
+                          val userFuture = actorRef.ask(ref =>
+                            UserActor.RegisterUser(userData.username, userData.email, userData.passwordHash, ref)
+                          )(timeout, scheduler)
                           onComplete(userFuture) {
                             case scala.util.Success(Right(user)) =>
-                              complete(HttpResponse(StatusCodes.Created, entity = """{"message": "Utilisateur créé avec succès"}"""))
+                              // Création d'un portefeuille par défaut pour l'utilisateur
+                              val defaultPortfolioName = s"Portefeuille de ${user.username}"
+                              onComplete(portfolioRepo.createPortfolio(user.id, defaultPortfolioName)) {
+                                case scala.util.Success(portfolio) =>
+                                  complete(HttpResponse(
+                                    StatusCodes.Created,
+                                    entity = s"""{"message": "Utilisateur et portefeuille créés avec succès", "portfolioId": ${portfolio.id}}"""
+                                  ))
+                                case scala.util.Failure(ex) =>
+                                  complete(HttpResponse(
+                                    StatusCodes.InternalServerError,
+                                    entity = s"""{"message": "Utilisateur créé, mais erreur lors de la création du portefeuille: ${ex.getMessage}"}"""
+                                  ))
+                              }
                             case scala.util.Success(Left(errorMessage)) =>
                               complete(HttpResponse(StatusCodes.BadRequest, entity = s"""{"message": "$errorMessage"}"""))
                             case scala.util.Failure(ex) =>
@@ -518,7 +542,43 @@ object HttpServer {
       case Left(_) => None
     }
   }
-  def decodeUserIdFromToken(token: String): Int = 1
+  // def decodeUserIdFromToken(token: String): Int = 1
+
+  import pdi.jwt.{Jwt, JwtAlgorithm, JwtClaim}
+  import io.circe.parser._
+
+  def decodeUserIdFromToken(token: String): Int = {
+    try {
+      // Supprime "Bearer " du token si présent
+      val jwtToken = token.replace("Bearer ", "")
+      println(s"[DEBUG] Token reçu: $jwtToken")
+      // Décode le JWT
+      Jwt.decode(jwtToken, "super-secret-key", Seq(JwtAlgorithm.HS256)) match {
+        case Success(claim) =>
+          // Parse le contenu du JWT
+          parse(claim.content) match {
+            case Right(json) =>
+              json.hcursor.downField("userId").as[Int] match {
+                case Right(userId) => userId
+                case Left(_) => 
+                  println("[ERROR] Impossible d'extraire userId du token")
+                  -1
+              }
+            case Left(_) => 
+              println("[ERROR] Impossible de parser le JWT")
+              -1
+          }
+        case Failure(_) => 
+          println("[ERROR] JWT invalide")
+          -1
+      }
+    } catch {
+      case e: Exception => 
+        println(s"[ERROR] Erreur lors du décodage du token: ${e.getMessage}")
+        -1
+    }
+  }
+
 
   def parsePortfolioName(json: String): String = {
     parse(json) match {

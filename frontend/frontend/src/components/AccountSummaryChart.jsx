@@ -1,9 +1,7 @@
-//frontend/src/components/AccountSummaryChart.jsx.jsx
-
+// frontend/src/components/AccountSummaryChart.jsx.jsx
 import React from "react";
 import { Pie } from "react-chartjs-2";
 import PropTypes from "prop-types";
-
 import {
     Chart as ChartJS,
     ArcElement,
@@ -11,8 +9,9 @@ import {
     Legend,
 } from "chart.js";
 
-// Enregistrement des éléments nécessaires
+// Enregistrement des éléments nécessaires pour Chart.js
 ChartJS.register(ArcElement, Tooltip, Legend);
+
 const AccountSummaryChart = ({ summaryData }) => {
     const data = {
         labels: ["Crypto", "Actions", "Devises"],
@@ -22,7 +21,7 @@ const AccountSummaryChart = ({ summaryData }) => {
                 backgroundColor: [
                     "rgba(75,192,192,0.6)",
                     "rgba(255,206,86,0.6)",
-                    "rgba(153,102,255,0.6)"
+                    "rgba(153,102,255,0.6)",
                 ],
             },
         ],
@@ -35,7 +34,8 @@ const AccountSummaryChart = ({ summaryData }) => {
                 width={300}
                 height={300}
                 options={{ maintainAspectRatio: false }}
-            />        </div>
+            />
+        </div>
     );
 };
 

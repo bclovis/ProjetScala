@@ -1,48 +1,67 @@
 // frontend/src/pages/LoginPage.jsx
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import '@fortawesome/fontawesome-free/css/all.min.css';
-//import '../styles/LoginPage.css'; // Assurez-vous que ce fichier contient les styles inspirés du GitHub fourni
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import "@fortawesome/fontawesome-free/css/all.min.css";
+import "../styles/LoginPage.css"; // Assurez-vous que ce fichier existe
 
 const LoginPage = () => {
-    const [isActive, setIsActive] = useState(false); // false = mode Sign In, true = mode Sign Up
+    const [isActive, setIsActive] = useState(false); // false = Sign In, true = Sign Up
+    const [username, setUsername] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
     const navigate = useNavigate();
 
+    // Vérifie si l'utilisateur est déjà connecté
     useEffect(() => {
         const token = localStorage.getItem("token");
         if (token) {
-            navigate("/dashboard"); // ✅ Redirige vers /dashboard s'il est déjà connecté
+            navigate("/dashboard"); // Redirige si connecté
         }
-    }, []);
+    }, [navigate]);
 
+    // Connexion utilisateur
     const handleLogin = async (e) => {
         e.preventDefault();
         setError("");
+
         try {
             const response = await fetch("http://localhost:8080/api/login", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ email, password }),
             });
+
             const data = await response.json();
             if (!response.ok) throw new Error(data.message || "Échec de connexion");
-            localStorage.setItem("token", data.token);
-            navigate("/dashboard");
+
+            localStorage.setItem("token", data.token); // Stocke le JWT
+            navigate("/dashboard"); // Redirige après connexion
         } catch (err) {
             setError(err.message);
         }
     };
 
+    // Inscription utilisateur
     const handleSignUp = async (e) => {
         e.preventDefault();
         setError("");
-        // Pour l'instant, nous simulons la réussite de l'inscription en utilisant uniquement l'email et le mot de passe
-        console.log("Inscription effectuée avec", email, password);
-        // Une fois l'inscription simulée, on passe en mode connexion
-        setIsActive(false);
+
+        try {
+            const response = await fetch("http://localhost:8080/api/register", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username, email, password }),
+            });
+
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.message || "Échec de l'inscription");
+
+            localStorage.setItem("token", data.token); // Stocke le JWT
+            navigate("/dashboard"); // Redirige après inscription
+        } catch (err) {
+            setError(err.message);
+        }
     };
 
     return (
@@ -51,56 +70,66 @@ const LoginPage = () => {
                 {/* Formulaire d'inscription */}
                 <div className="form-container sign-up">
                     <form onSubmit={handleSignUp}>
-                        <h1>Create Account</h1>
+                        <h1>Créer un compte</h1>
                         <div className="social-icons">
                             <a href="#" className="icon"><i className="fa-brands fa-google-plus-g"></i></a>
                             <a href="#" className="icon"><i className="fa-brands fa-facebook-f"></i></a>
                             <a href="#" className="icon"><i className="fa-brands fa-github"></i></a>
                             <a href="#" className="icon"><i className="fa-brands fa-linkedin-in"></i></a>
                         </div>
-                        <span>or use your email for registration</span>
-                        {/* Champ "Name" supprimé */}
+                        <span>Ou utilisez votre e-mail pour vous inscrire</span>
+                        <input
+                            type="text"
+                            placeholder="Nom d'utilisateur"
+                            value={username}
+                            onChange={(e) => setUsername(e.target.value)}
+                            required
+                        />
                         <input
                             type="email"
                             placeholder="Email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
+                            required
                         />
                         <input
                             type="password"
-                            placeholder="Password"
+                            placeholder="Mot de passe"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
+                            required
                         />
-                        <button type="submit">Sign Up</button>
+                        <button type="submit">S'inscrire</button>
                     </form>
                 </div>
 
                 {/* Formulaire de connexion */}
                 <div className="form-container sign-in">
                     <form onSubmit={handleLogin}>
-                        <h1>Sign In</h1>
+                        <h1>Connexion</h1>
                         <div className="social-icons">
                             <a href="#" className="icon"><i className="fa-brands fa-google-plus-g"></i></a>
                             <a href="#" className="icon"><i className="fa-brands fa-facebook-f"></i></a>
                             <a href="#" className="icon"><i className="fa-brands fa-github"></i></a>
                             <a href="#" className="icon"><i className="fa-brands fa-linkedin-in"></i></a>
                         </div>
-                        <span>or use your email password</span>
+                        <span>Ou utilisez votre e-mail et mot de passe</span>
                         <input
                             type="email"
                             placeholder="Email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
+                            required
                         />
                         <input
                             type="password"
-                            placeholder="Password"
+                            placeholder="Mot de passe"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
+                            required
                         />
-                        <a href="/">Forget Your Password?</a>
-                        <button type="submit">Sign In</button>
+                        <a href="/">Mot de passe oublié ?</a>
+                        <button type="submit">Se connecter</button>
                     </form>
                 </div>
 
@@ -108,14 +137,14 @@ const LoginPage = () => {
                 <div className="toggle-container">
                     <div className="toggle">
                         <div className="toggle-panel toggle-left">
-                            <h1>Welcome Back!</h1>
-                            <p>Enter your email and password to sign in</p>
-                            <button className="hidden" onClick={() => setIsActive(false)}>Sign In</button>
+                            <h1>Bienvenue !</h1>
+                            <p>Entrez vos identifiants pour vous connecter</p>
+                            <button className="hidden" onClick={() => setIsActive(false)}>Connexion</button>
                         </div>
                         <div className="toggle-panel toggle-right">
-                            <h1>Hello, Friend!</h1>
-                            <p>Register with your email and password to get started</p>
-                            <button className="nav-button" onClick={() => navigate('/register')}>Nouveau</button>
+                            <h1>Rejoignez-nous !</h1>
+                            <p>Inscrivez-vous en quelques clics</p>
+                            <button className="hidden" onClick={() => setIsActive(true)}>Inscription</button>
                         </div>
                     </div>
                 </div>

@@ -49,7 +49,7 @@ class TransactionRepository(dbUrl: String, dbUser: String, dbPassword: String) {
         transactions = transactions :+ Transaction(
           id = rs.getInt("id"),
           portfolioId = rs.getInt("portfolio_id"),
-          assetType = rs.getString("symbol"), // Vérifiez si c'est voulu (ou utilisez "asset_type")
+          assetType = rs.getString("asset_type"), // Vérifiez si c'est voulu (ou utilisez "asset_type")
           symbol = rs.getString("symbol"),
           amount = rs.getBigDecimal("amount"),
           price = rs.getBigDecimal("price"),

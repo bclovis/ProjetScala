@@ -11,7 +11,7 @@ const PortfolioList = ({ portfolios, onSelectPortfolio, selectedPortfolioId }) =
             ) : (
                 <ul>
                     {portfolios.map((portfolio) => (
-                        <li
+                        <ol
                             key={portfolio.id}
                             className={`cursor-pointer p-2 rounded mb-1 ${
                                 selectedPortfolioId === portfolio.id ? "bg-blue-100" : "bg-gray-100"
@@ -19,7 +19,7 @@ const PortfolioList = ({ portfolios, onSelectPortfolio, selectedPortfolioId }) =
                             onClick={() => onSelectPortfolio(portfolio.id)}
                         >
                             {portfolio.name}
-                        </li>
+                        </ol>
                     ))}
                 </ul>
             )}
