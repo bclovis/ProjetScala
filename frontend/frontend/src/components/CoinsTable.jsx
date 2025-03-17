@@ -10,7 +10,7 @@ const CoinsTable = () => {
   const [selectedCoin, setSelectedCoin] = useState(null); // Stockage de l'actif sélectionné
 
   const calculateChange = (prices, hours) => {
-    if (!prices || prices.length === 0) return 0; // Vérifie que `prices` existe
+    if (!prices || prices.length === 0) return 0;
     
     const latestPrice = prices[prices.length - 1]?.price || 0;
     const pastTimestamp = Date.now() - hours * 60 * 60 * 1000;
@@ -41,7 +41,7 @@ const CoinsTable = () => {
         try {
             const data = JSON.parse(event.data);
             console.log("Données reçues :", data);
-            console.log("Données de la catégorie actuelle :", data[category]); // 🔍 Debug
+            console.log("Données de la catégorie actuelle :", data[category]); // Debug
     
             // Vérification si les données existent bien
             if (data[category] && Object.keys(data[category]).length > 0) {
