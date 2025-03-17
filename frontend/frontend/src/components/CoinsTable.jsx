@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, TextField, MenuItem, Select, Dialog } from "@mui/material";
 import CoinInfo from "./CoinInfo";
+import {grey} from "@mui/material/colors";
 
 const CoinsTable = () => {
   const [category, setCategory] = useState("crypto"); // Catégorie sélectionnée
@@ -108,35 +109,35 @@ const CoinsTable = () => {
       </div>
 
       {/* Tableau des actifs */}
-      <TableContainer component={Paper} style={{ backgroundColor: "#1e1e1e", color: "white" }}>
+      <TableContainer component={Paper} style={{ backgroundColor: "black", color: "white" }}>
         <Table>
           <TableHead>
             <TableRow style={{ backgroundColor: "#2a2a2a" }}>
-              <TableCell align="center"><b>Asset</b></TableCell>
-              <TableCell align="center"><b>Name</b></TableCell>
-              <TableCell align="center"><b>Price</b></TableCell>
-              <TableCell align="center"><b>Market Cap Change</b></TableCell>
-              <TableCell align="center"><b>1H</b></TableCell>
-              <TableCell align="center"><b>24H</b></TableCell>
-              <TableCell align="center"><b>7D</b></TableCell>
+              <TableCell align="center" style={{ color: "darkgrey" }}><b>Asset</b></TableCell>
+              <TableCell align="center" style={{ color: "darkgrey" }}><b>Name</b></TableCell>
+              <TableCell align="center" style={{ color: "darkgrey" }}><b>Price</b></TableCell>
+              <TableCell align="center" style={{ color: "darkgrey" }}><b>Market Cap Change</b></TableCell>
+              <TableCell align="center" style={{ color: "darkgrey" }}><b>1H</b></TableCell>
+              <TableCell align="center" style={{ color: "darkgrey" }}><b>24H</b></TableCell>
+              <TableCell align="center" style={{ color: "darkgrey" }}><b>7D</b></TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {filteredAssets.map((asset) => (
               <TableRow key={asset.symbol} style={{ cursor: "pointer" }} onClick={() => setSelectedCoin(asset)}>
-                <TableCell align="center">{asset.symbol}</TableCell>
-                <TableCell align="center">{asset.longName}</TableCell>
-                <TableCell align="center">${asset.prices ? asset.prices[asset.prices.length - 1].price.toFixed(2) : "N/A"}</TableCell>
-                <TableCell align="center" style={{ color: asset.change < 0 ? "red" : "lightgreen" }}>
+                <TableCell align="center" style={{ color: grey[300] }}>{asset.symbol}</TableCell>
+                <TableCell align="center" style={{ color: grey[300] }}>{asset.longName}</TableCell>
+                <TableCell align="center" style={{ color: grey[300] }}>${asset.prices ? asset.prices[asset.prices.length - 1].price.toFixed(2) : "N/A"}</TableCell>
+                <TableCell align="center" style={{ color: asset.change < 0 ? "orangered" : "springgreen" }}>
                     {asset.change ? asset.change.toFixed(3) + "%" : "N/A"}
                 </TableCell>
-                <TableCell align="center" style={{ color: calculateChange(asset.prices, 1) < 0 ? "red" : "lightgreen" }}>
+                <TableCell align="center" style={{ color: calculateChange(asset.prices, 1) < 0 ? "orangered" : "springgreen" }}>
                     {calculateChange(asset.prices, 1).toFixed(3) + "%"}
                 </TableCell>
-                <TableCell align="center" style={{ color: calculateChange(asset.prices, 24) < 0 ? "red" : "lightgreen" }}>
+                <TableCell align="center" style={{ color: calculateChange(asset.prices, 24) < 0 ? "orangered" : "springgreen" }}>
                     {calculateChange(asset.prices, 24).toFixed(3) + "%"}
                 </TableCell>
-                <TableCell align="center" style={{ color: calculateChange(asset.prices, 168) < 0 ? "red" : "lightgreen" }}>
+                <TableCell align="center" style={{ color: calculateChange(asset.prices, 168) < 0 ? "orangered" : "springgreen" }}>
                     {calculateChange(asset.prices, 168).toFixed(3) + "%"}
                 </TableCell>
               </TableRow>

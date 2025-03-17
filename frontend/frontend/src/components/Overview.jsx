@@ -10,8 +10,8 @@ const Overview = ({ walletBalance, globalBalance, notifications }) => {
         <div className="overview bg-white p-4 rounded shadow mb-4">
             <div className="flex justify-between items-center">
                 <div>
-                    <h2 className="text-xl font-bold">Fonds Déposés</h2>
-                    <p className="text-2xl">{walletBalance ? walletBalance.toFixed(2) : "0.00"} €</p>
+                    <p className="text-xl font-bold">Fonds Déposés</p>
+                    <h2 className="text-2xl">{walletBalance ? walletBalance.toFixed(2) : "0.00"} €</h2>
                 </div>
                 <button
                     className="bg-blue-500 text-white py-2 px-4 rounded"
@@ -21,19 +21,9 @@ const Overview = ({ walletBalance, globalBalance, notifications }) => {
                 </button>
             </div>
             <div className="mt-4">
-                <h2 className="text-xl font-bold">Valeur des Investissements</h2>
-                <p className="text-2xl">{globalBalance ? globalBalance.toFixed(2) : "0.00"} €</p>
+                <p className="text-xl font-bold">Valeur des Investissements</p>
+                <h2 className="text-2xl">{globalBalance ? globalBalance.toFixed(2) : "0.00"} €</h2>
             </div>
-            {notifications && notifications.length > 0 && (
-                <div className="mt-4">
-                    <h3 className="font-bold">Notifications</h3>
-                    <ul>
-                        {notifications.map((note, idx) => (
-                            <li key={idx}>{note}</li>
-                        ))}
-                    </ul>
-                </div>
-            )}
         </div>
     );
 };
