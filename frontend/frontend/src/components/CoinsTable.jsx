@@ -3,7 +3,6 @@ import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper
 import CoinInfo from "./CoinInfo";
 
 const CoinsTable = ({ portfolioId, token, walletBalance, availableBalance, onAssetAdded }) => {
-const CoinsTable = ({ portfolioId, token, walletBalance, availableBalance, onAssetAdded }) => {
   const [category, setCategory] = useState("crypto"); // Catégorie sélectionnée
   const [searchTerm, setSearchTerm] = useState(""); // Recherche utilisateur
   const [assets, setAssets] = useState([]); // Stockage des actifs (crypto, actions, devises)
@@ -15,14 +14,9 @@ const CoinsTable = ({ portfolioId, token, walletBalance, availableBalance, onAss
   console.log("token:", token); // Ajoutez ce log pour vérifier token
 
 
-  console.log("availableBalance:", availableBalance); // Ajoutez ce log pour vérifier availableBalance
-  console.log("portfolioId:", portfolioId); // Ajoutez ce log pour vérifier portfolioId
-  console.log("token:", token); // Ajoutez ce log pour vérifier token
-
-
   const calculateChange = (prices, hours) => {
     if (!prices || prices.length === 0) return 0;
-    
+
     const latestPrice = prices[prices.length - 1]?.price || 0;
     const pastTimestamp = Date.now() - hours * 60 * 60 * 1000;
 
@@ -37,7 +31,6 @@ const CoinsTable = ({ portfolioId, token, walletBalance, availableBalance, onAss
     // Calcul du changement en pourcentage
     return pastPrice !== 0 ? ((latestPrice - pastPrice) / pastPrice) * 100 : 0;
   };
-  };
 
   useEffect(() => {
     // Connexion WebSocket
@@ -50,22 +43,22 @@ const CoinsTable = ({ portfolioId, token, walletBalance, availableBalance, onAss
 
       socket.onmessage = (event) => {
         try {
-            const data = JSON.parse(event.data);
-            console.log("Données reçues :", data);
-            console.log("Données de la catégorie actuelle :", data[category]); // Debug
-    
-            // Vérification si les données existent bien
-            if (data[category] && Object.keys(data[category]).length > 0) {
-                setAssets(Object.values(data[category]));
-            } else {
-                console.warn("Aucune donnée trouvée pour la catégorie :", category);
-                setAssets([]); // Réinitialiser pour éviter l'affichage de données invalides
-            }
+          const data = JSON.parse(event.data);
+          console.log("Données reçues :", data);
+          console.log("Données de la catégorie actuelle :", data[category]); // Debug
+
+          // Vérification si les données existent bien
+          if (data[category] && Object.keys(data[category]).length > 0) {
+            setAssets(Object.values(data[category]));
+          } else {
+            console.warn("Aucune donnée trouvée pour la catégorie :", category);
+            setAssets([]); // Réinitialiser pour éviter l'affichage de données invalides
+          }
         } catch (error) {
           console.error("Erreur de parsing JSON :", error);
         }
       };
-    
+
       socket.onerror = (err) => {
         console.error("Erreur WebSocket :", err);
         socket.close();
@@ -155,19 +148,19 @@ const CoinsTable = ({ portfolioId, token, walletBalance, availableBalance, onAss
           </Table>
         </TableContainer>
 
-      <Dialog open={Boolean(selectedCoin)} onClose={() => setSelectedCoin(null)} fullWidth maxWidth="md">
-      {selectedCoin && (
-        <CoinInfo
-          coin={selectedCoin}
-          portfolioId={portfolioId}
-          token={token}
-          walletBalance={walletBalance}
-          availableBalance={walletBalance}
-          onAssetAdded={onAssetAdded}
-        />
-      )}
-    </Dialog>
-    </div>
+        <Dialog open={Boolean(selectedCoin)} onClose={() => setSelectedCoin(null)} fullWidth maxWidth="md">
+          {selectedCoin && (
+              <CoinInfo
+                  coin={selectedCoin}
+                  portfolioId={portfolioId}
+                  token={token}
+                  walletBalance={walletBalance}
+                  availableBalance={walletBalance}
+                  onAssetAdded={onAssetAdded}
+              />
+          )}
+        </Dialog>
+      </div>
   );
 };
 

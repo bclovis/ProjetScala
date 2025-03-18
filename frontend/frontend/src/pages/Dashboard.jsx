@@ -35,8 +35,8 @@ const Dashboard = () => {
     const [globalBalance, setGlobalBalance] = useState(0);
     const [walletBalance, setWalletBalance] = useState(0);
     const [selectedPortfolio, setSelectedPortfolio] = useState(
-        localStorage.getItem("selectedPortfolio") 
-            ? parseInt(localStorage.getItem("selectedPortfolio")) 
+        localStorage.getItem("selectedPortfolio")
+            ? parseInt(localStorage.getItem("selectedPortfolio"))
             : null
     );
     const [accountSummary, setAccountSummary] = useState({
@@ -51,7 +51,6 @@ const Dashboard = () => {
             return;
         }
 
-
         fetch("http://localhost:8080/api/portfolios", {
             method: "GET",
             headers: {
@@ -59,26 +58,26 @@ const Dashboard = () => {
                 "Authorization": `Bearer ${token}`,
             },
         })
-        .then((res) => res.json())
-        .then((data) => {
-            console.log("API portfolios response:", data); // 🔍 Vérifier ce que l'API retourne
-            
-            if (data && data.length > 0) {
-                setPortfolios(data);
+            .then((res) => res.json())
+            .then((data) => {
+                console.log("API portfolios response:", data); // 🔍 Vérifier ce que l'API retourne
 
-                // Si selectedPortfolio est null ou n'existe plus, on prend le premier dispo
-                if (!selectedPortfolio || !data.some(p => p.id === selectedPortfolio)) {
-                    setSelectedPortfolio(data[0].id);
-                    localStorage.setItem("selectedPortfolio", data[0].id);
+                if (data && data.length > 0) {
+                    setPortfolios(data);
+
+                    // Si selectedPortfolio est null ou n'existe plus, on prend le premier dispo
+                    if (!selectedPortfolio || !data.some(p => p.id === selectedPortfolio)) {
+                        setSelectedPortfolio(data[0].id);
+                        localStorage.setItem("selectedPortfolio", data[0].id);
+                    }
+                } else {
+                    console.warn("⚠️ L'API a retourné un tableau vide pour portfolios !");
+                    setPortfolios([]); // Empêche les erreurs de rendu
                 }
-            } else {
-                console.warn("⚠️ L'API a retourné un tableau vide pour portfolios !");
-                setPortfolios([]); // Empêche les erreurs de rendu
-            }
-        })
-        .catch((err) => {
-            console.error("Erreur lors de la récupération des portfolios:", err);
-        });
+            })
+            .catch((err) => {
+                console.error("Erreur lors de la récupération des portfolios:", err);
+            });
     };
 
     const fetchGlobalBalance = () => {
@@ -89,9 +88,9 @@ const Dashboard = () => {
                 "Authorization": `Bearer ${token}`,
             },
         })
-        .then((res) => res.json())
-        .then((data) => setGlobalBalance(parseFloat(data.globalBalance)))
-        .catch((err) => console.error("Erreur solde global:", err));
+            .then((res) => res.json())
+            .then((data) => setGlobalBalance(parseFloat(data.globalBalance)))
+            .catch((err) => console.error("Erreur solde global:", err));
     };
 
     const fetchWalletBalance = () => {
@@ -102,9 +101,9 @@ const Dashboard = () => {
                 "Authorization": `Bearer ${token}`,
             },
         })
-        .then((res) => res.json())
-        .then((data) => setWalletBalance(parseFloat(data.walletBalance)))
-        .catch((err) => console.error("Erreur solde wallet:", err));
+            .then((res) => res.json())
+            .then((data) => setWalletBalance(parseFloat(data.walletBalance)))
+            .catch((err) => console.error("Erreur solde wallet:", err));
     };
 
     const fetchAccountSummary = () => {
@@ -115,9 +114,9 @@ const Dashboard = () => {
                 "Authorization": `Bearer ${token}`,
             },
         })
-        .then((res) => res.json())
-        .then((data) => setAccountSummary(data))
-        .catch((err) => console.error("Erreur résumé du compte:", err));
+            .then((res) => res.json())
+            .then((data) => setAccountSummary(data))
+            .catch((err) => console.error("Erreur résumé du compte:", err));
     };
 
     // Chargement des données au montage
@@ -130,18 +129,7 @@ const Dashboard = () => {
         // Mise à jour des portfolios toutes les 30 secondes
         const interval = setInterval(fetchPortfolios, 30000);
         return () => clearInterval(interval); // Nettoyer l'intervalle en cas de démontage
-
-        // Mise à jour des portfolios toutes les 30 secondes
-        const interval = setInterval(fetchPortfolios, 30000);
-        return () => clearInterval(interval); // Nettoyer l'intervalle en cas de démontage
     }, [navigate, token]);
-
-    // Mettre à jour le localStorage lorsque selectedPortfolio change
-    useEffect(() => {
-        if (selectedPortfolio !== null) {
-            localStorage.setItem("selectedPortfolio", selectedPortfolio);
-        }
-    }, [selectedPortfolio]);
 
     // Mettre à jour le localStorage lorsque selectedPortfolio change
     useEffect(() => {
@@ -160,14 +148,11 @@ const Dashboard = () => {
                     "Authorization": `Bearer ${token}`,
                 },
             })
-            .then((res) => res.json())
-            .then((data) => setPerformanceData(data))
-            .catch((err) => console.error(err));
+                .then((res) => res.json())
+                .then((data) => setPerformanceData(data))
+                .catch((err) => console.error(err));
         }
     }, [selectedPortfolio, token]);
-
-    console.log("🟢 selectedPortfolio:", selectedPortfolio);
-    console.log("🟢 portfolios:", portfolios);
 
     console.log("🟢 selectedPortfolio:", selectedPortfolio);
     console.log("🟢 portfolios:", portfolios);
@@ -195,12 +180,7 @@ const Dashboard = () => {
                 walletBalance={walletBalance}
                 globalBalance={globalBalance}
                 notifications={["Nouveau listing: SOL", "Attention: Mise à jour de sécurité disponible"]}
-                notifications={["Nouveau listing: SOL", "Attention: Mise à jour de sécurité disponible"]}
                 portfolios={portfolios}
-                onSelectPortfolio={(id) => {
-                    setSelectedPortfolio(id);
-                    localStorage.setItem("selectedPortfolio", id);
-                }}
                 onSelectPortfolio={(id) => {
                     setSelectedPortfolio(id);
                     localStorage.setItem("selectedPortfolio", id);
@@ -218,4 +198,3 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
-
