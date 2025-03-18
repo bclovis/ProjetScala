@@ -216,17 +216,25 @@ object HttpServer {
                           )(timeout, scheduler)
                           onComplete(userFuture) {
                             case scala.util.Success(Right(user)) =>
-                              // Création d'un portefeuille par défaut pour l'utilisateur
                               val defaultPortfolioName = s"Portefeuille de ${user.username}"
                               onComplete(portfolioRepo.createPortfolio(user.id, defaultPortfolioName)) {
                                 case scala.util.Success(portfolio) =>
+                                  // Génération du token JWT pour l'utilisateur nouvellement inscrit
+                                  val claims = JwtClaim(
+                                    expiration = Some(Instant.now.plusSeconds(3600).getEpochSecond),
+                                    issuedAt = Some(Instant.now.getEpochSecond),
+                                    content = s"""{"userId": ${user.id}, "email": "${user.email}"}"""
+                                  )
+                                  val token = Jwt.encode(claims, "super-secret-key", JwtAlgorithm.HS256)
                                   complete(HttpResponse(
                                     StatusCodes.Created,
-                                    entity = s"""{"message": "Utilisateur et portefeuille créés avec succès", "portfolioId": ${portfolio.id}}"""
+                                    entity = s"""{"message": "Utilisateur et portefeuille créés avec succès", "portfolioId": ${portfolio.id}, "token": "$token"}"""
                                   ))
                                 case scala.util.Failure(ex) =>
-                                  complete(HttpResponse(StatusCodes.InternalServerError,
-                                    entity = s"""{"error": "Utilisateur créé, mais erreur lors de la création du portefeuille: ${ex.getMessage}"}"""))
+                                  complete(HttpResponse(
+                                    StatusCodes.InternalServerError,
+                                    entity = s"""{"message": "Utilisateur créé, mais erreur lors de la création du portefeuille: ${ex.getMessage}"}"""
+                                  ))
                               }
                             case scala.util.Success(Left(errorMessage)) =>
                               complete(HttpResponse(StatusCodes.BadRequest, entity = s"""{"error": "$errorMessage"}"""))
