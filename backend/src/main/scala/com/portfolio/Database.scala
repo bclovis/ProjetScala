@@ -9,8 +9,8 @@ object Database {
   // Configuration de HikariCP
   private val config = new HikariConfig()
   config.setJdbcUrl("jdbc:postgresql://localhost:5432/portfolio_db")
-  config.setUsername("elouanekoka")
-  config.setPassword("postgres")
+  config.setUsername("postgres")
+  config.setPassword("cytech0001")
   config.setDriverClassName("org.postgresql.Driver")
   config.addDataSourceProperty("cachePrepStmts", "true")
   config.addDataSourceProperty("prepStmtCacheSize", "250")

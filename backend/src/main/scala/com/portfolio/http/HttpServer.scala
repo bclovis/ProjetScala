@@ -73,16 +73,16 @@ object HttpServer {
   // Configuration de la base de données
   val dbUrl = "jdbc:postgresql://localhost:5432/portfolio_db"
   val dbUser = "postgres"
-  val dbPassword = "postgres"
+  val dbPassword = "cytech0001"
 
   // Instanciation des repositories
-  val portfolioRepo   = new PortfolioRepository(dbUrl, dbUser, dbPassword)
-  val assetRepo       = new AssetRepository(dbUrl, dbUser, dbPassword)
+  val portfolioRepo = new PortfolioRepository(dbUrl, dbUser, dbPassword)
+  val assetRepo = new AssetRepository(dbUrl, dbUser, dbPassword)
   val performanceRepo = new PerformanceRepository(dbUrl, dbUser, dbPassword)
-  val marketDataRepo  = new MarketDataRepository(dbUrl, dbUser, dbPassword)
+  val marketDataRepo = new MarketDataRepository(dbUrl, dbUser, dbPassword)
   val userAccountRepo = new UserAccountRepository(dbUrl, dbUser, dbPassword)
   val transactionRepo = new TransactionRepository(dbUrl, dbUser, dbPassword)
-  val userRepo        = new UserRepository(dbUrl, dbUser, dbPassword)
+  val userRepo = new UserRepository(dbUrl, dbUser, dbPassword)
   var userActor: Option[ActorRef[UserActor.Command]] = None
 
   // Création d'un unique système d'acteurs typé avec racine
@@ -109,7 +109,7 @@ object HttpServer {
   implicit val timeout: Timeout = Timeout(5.seconds)
   implicit val scheduler: Scheduler = system.scheduler
 
-  val balanceService = new BalanceService(portfolioRepo, assetRepo)(classicSystem, system.executionContext)
+  val balanceService = new BalanceService(portfolioRepo, assetRepo, marketDataRepo)(classicSystem, system.executionContext)
   val accountSummaryService = new AccountSummaryService(portfolioRepo, assetRepo)(classicSystem, system.executionContext)
 
   val marketDataActorKey = ServiceKey[MarketDataActor.Command]("marketDataActor")
@@ -161,7 +161,7 @@ object HttpServer {
   }
 
   def main(args: Array[String]): Unit = {
-    while(marketDataActor.isEmpty) {
+    while (marketDataActor.isEmpty) {
       Thread.sleep(100)
     }
 
@@ -269,7 +269,7 @@ object HttpServer {
                   }
                 }
               }
-            }~
+            } ~
             // Endpoint pour récupérer le solde du wallet (fonds déposés)
             path("wallet-balance") {
               get {
@@ -435,8 +435,10 @@ object HttpServer {
                 headerValueByName("Authorization") { token =>
                   onComplete(performanceRepo.getPerformanceData(portfolioId)) {
                     case scala.util.Success(perfData) =>
+                      // Si les données sont récupérées avec succès, on les retourne au format JSON
                       complete(HttpResponse(StatusCodes.OK, entity = perfData.asJson.noSpaces))
                     case scala.util.Failure(ex) =>
+                      // En cas d'erreur, on retourne un message d'erreur avec le statut 500
                       complete(HttpResponse(StatusCodes.InternalServerError, entity = s"Erreur: ${ex.getMessage}"))
                   }
                 }
@@ -445,8 +447,8 @@ object HttpServer {
             path("global-balance") {
               get {
                 headerValueByName("Authorization") { token =>
-                  val userId = decodeUserIdFromToken(token)
-                  onComplete(balanceService.calculateGlobalBalance(userId)) {
+                  val userId = decodeUserIdFromToken(token) // Décodage du userId
+                  onComplete(balanceService.calculateGlobalBalance(userId)) { // Utilisation de la méthode correcte
                     case scala.util.Success(balance) =>
                       complete(HttpResponse(StatusCodes.OK, entity = s"""{"globalBalance": "$balance"}"""))
                     case scala.util.Failure(ex) =>
@@ -513,20 +515,21 @@ object HttpServer {
   }
 
   def parseCredentials(json: String): Credentials = {
-  parse(json) match {
-    case Right(jsonData) =>
-      val email = jsonData.hcursor.downField("email").as[String].getOrElse("")
-      val password = jsonData.hcursor.downField("password").as[String].getOrElse("")
-      println(s"[DEBUG] JSON reçu : $json") // ✅ Ajoute un log
-      println(s"[DEBUG] Email extrait : $email")
-      println(s"[DEBUG] Password extrait : $password")
-      Credentials(email, password)
+    parse(json) match {
+      case Right(jsonData) =>
+        val email = jsonData.hcursor.downField("email").as[String].getOrElse("")
+        val password = jsonData.hcursor.downField("password").as[String].getOrElse("")
+        println(s"[DEBUG] JSON reçu : $json") // ✅ Ajoute un log
+        println(s"[DEBUG] Email extrait : $email")
+        println(s"[DEBUG] Password extrait : $password")
+        Credentials(email, password)
 
-    case Left(_) =>
-      println("[DEBUG] Erreur lors du parsing JSON")
-      Credentials("", "")
+      case Left(_) =>
+        println("[DEBUG] Erreur lors du parsing JSON")
+        Credentials("", "")
+    }
   }
-}
+
   def parseUserRegistration(json: String): Option[User] = {
     parse(json) match {
       case Right(jsonData) =>
@@ -560,20 +563,20 @@ object HttpServer {
             case Right(json) =>
               json.hcursor.downField("userId").as[Int] match {
                 case Right(userId) => userId
-                case Left(_) => 
+                case Left(_) =>
                   println("[ERROR] Impossible d'extraire userId du token")
                   -1
               }
-            case Left(_) => 
+            case Left(_) =>
               println("[ERROR] Impossible de parser le JWT")
               -1
           }
-        case Failure(_) => 
+        case Failure(_) =>
           println("[ERROR] JWT invalide")
           -1
       }
     } catch {
-      case e: Exception => 
+      case e: Exception =>
         println(s"[ERROR] Erreur lors du décodage du token: ${e.getMessage}")
         -1
     }
