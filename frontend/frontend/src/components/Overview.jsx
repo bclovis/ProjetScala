@@ -2,6 +2,7 @@
 import React from "react";
 import PropTypes from "prop-types";
 import { useNavigate } from "react-router-dom";
+import AnimatedButton from "./AnimatedButton.jsx";
 
 const Overview = ({ walletBalance, globalBalance, notifications }) => {
     const navigate = useNavigate();
@@ -13,12 +14,9 @@ const Overview = ({ walletBalance, globalBalance, notifications }) => {
                     <p className="text-xl font-bold">Fonds Déposés</p>
                     <h2 className="text-2xl">{walletBalance ? walletBalance.toFixed(2) : "0.00"} €</h2>
                 </div>
-                <button
-                    className="bg-blue-500 text-white py-2 px-4 rounded"
-                    onClick={() => navigate("/deposit")}
-                >
+                <AnimatedButton onClick={() => navigate("/deposit")}>
                     Approvisionner
-                </button>
+                </AnimatedButton>
             </div>
             <div className="mt-4">
                 <p className="text-xl font-bold">Valeur des Investissements</p>

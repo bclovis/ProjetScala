@@ -13,6 +13,7 @@ import DepositPage from "./pages/DepositPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Header from "./components/Header";
 import MarketPage from "./pages/MarketPage";
+import "./index.css"
 
 // Définissez votre thème personnalisé
 const theme = createTheme({
