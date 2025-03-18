@@ -25,9 +25,9 @@ import scala.concurrent.duration._
 import io.circe.syntax._
 import io.circe.generic.auto._
 import io.circe.parser._
-import com.portfolio.db.repositories.{PortfolioRepository, AssetRepository, PerformanceRepository, MarketDataRepository, UserRepository}
+import com.portfolio.db.repositories.{PortfolioRepository, AssetRepository, PerformanceRepository, MarketDataRepository, UserRepository, UserAccountRepository, TransactionRepository}
 import com.portfolio.actors.{MarketDataActor, UserActor}
-import com.portfolio.models.{MarketData, User, Portfolio, Asset}
+import com.portfolio.models.{MarketData, User, Portfolio, Asset, Transaction}
 import akka.actor.typed.Scheduler
 import akka.actor.typed.receptionist.{Receptionist, ServiceKey}
 import io.circe.parser._
