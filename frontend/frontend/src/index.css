@@ -1,4 +1,7 @@
-/*frontend/src/index.css*/
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap");
 
 html,
@@ -8,9 +11,10 @@ body,
     height: 100%;
     width: 100%;
     font-family: "Inter", sans-serif;
-    background-color: #1f2026;
+    background-color: #242732;
 }
 
+/* Vos autres styles (scrollbar, etc.) ici */
 ::-webkit-scrollbar {
     width: 10px;
 }

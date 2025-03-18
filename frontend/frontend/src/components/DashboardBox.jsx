@@ -1,12 +1,14 @@
 import React from "react";
 import { Box } from "@mui/material";
 import BoxHeader from "./BoxHeader";
+import PropTypes from "prop-types";
+
 
 const DashboardBox = ({ children, title, subtitle, sideText, sx, gridArea, icon }) => {
     return (
         <Box
             sx={{
-                backgroundColor: "grey", // Utilisez une couleur définie dans votre thème
+                backgroundColor: "rgba(253,253,253,0.86)", // Utilisez une couleur définie dans votre thème
                 p: 2,
                 borderRadius: 2,
                 boxShadow: 3,
@@ -21,5 +23,15 @@ const DashboardBox = ({ children, title, subtitle, sideText, sx, gridArea, icon 
         </Box>
     );
 };
+
+DashboardBox.propTypes = {
+    children: PropTypes.node.isRequired,
+    title: PropTypes.string,
+    subtitle: PropTypes.string,
+    sideText: PropTypes.string,
+    sx: PropTypes.object,
+    gridArea: PropTypes.string,
+    icon: PropTypes.string,
+}
 
 export default DashboardBox;

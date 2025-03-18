@@ -25,39 +25,15 @@ import scala.concurrent.duration._
 import io.circe.syntax._
 import io.circe.generic.auto._
 import io.circe.parser._
-import com.portfolio.db.repositories.{PortfolioRepository, AssetRepository, PerformanceRepository, MarketDataRepository, UserRepository}
+import com.portfolio.db.repositories.{PortfolioRepository, AssetRepository, PerformanceRepository, MarketDataRepository, UserRepository, UserAccountRepository, TransactionRepository}
 import com.portfolio.actors.{MarketDataActor, UserActor}
-import com.portfolio.models.{MarketData, User, Portfolio, Asset}
+import com.portfolio.models.{MarketData, User, Portfolio, Asset, Transaction}
 import akka.actor.typed.Scheduler
 import akka.actor.typed.receptionist.{Receptionist, ServiceKey}
 import io.circe.parser._
 import io.circe.generic.auto._
-import akka.actor.typed.ActorSystem
-import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.scaladsl.adapter._ // Pour conversion en système classique ff
-import akka.http.scaladsl.Http
-import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.model.ws.{Message, TextMessage}
-import akka.http.scaladsl.model.headers._
-import akka.http.scaladsl.server.Directives._
-import akka.stream.Materializer
-import akka.stream.scaladsl.{Flow, Sink, Source}
-import akka.util.Timeout
-import scala.concurrent.Future
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration._
-import io.circe.syntax._
-import io.circe.generic.auto._
-import io.circe.parser._
 import akka.http.scaladsl.unmarshalling.Unmarshal
-import com.portfolio.db.repositories.{PortfolioRepository, AssetRepository, PerformanceRepository, MarketDataRepository, UserAccountRepository, TransactionRepository}
-import com.portfolio.actors.MarketDataActor
-import com.portfolio.models.MarketData
-import com.portfolio.models.Transaction
-import akka.actor.typed.Scheduler
 import com.portfolio.services.AccountSummaryService
-import akka.actor.typed.receptionist.{Receptionist, ServiceKey}
 import com.portfolio.services.BalanceService
 import java.time.LocalDateTime
 import org.mindrot.jbcrypt.BCrypt
@@ -71,9 +47,9 @@ case class UserRegistration(username: String, email: String, password: String)
 object HttpServer {
 
   // Configuration de la base de données
-  val dbUrl = "jdbc:postgresql://localhost:5432/portfolio_db"
-  val dbUser = "postgres"
-  val dbPassword = "postgres"
+  val dbUrl = sys.env.getOrElse("DB_URL", "jdbc:postgresql://postgres:5432/portfolio_db")
+  val dbUser = sys.env.getOrElse("DB_USER", "elouanekoka")
+  val dbPassword = sys.env.getOrElse("DB_PASSWORD", "postgres")
 
   // Instanciation des repositories
   val portfolioRepo   = new PortfolioRepository(dbUrl, dbUser, dbPassword)
@@ -87,8 +63,7 @@ object HttpServer {
 
   // Création d'un unique système d'acteurs typé avec racine
   val rootBehavior = Behaviors.setup[Any] { context =>
-
-    // Creation de l'acteur UserActor via spawn du contexte
+    // Création de l'acteur UserActor via spawn du contexte
     val userActorRef = context.spawn(UserActor(userRepo), "userActor")
     userActor = Some(userActorRef)
 
@@ -194,18 +169,17 @@ object HttpServer {
                             content = s"""{"userId": ${user.id}, "email": "${user.email}"}"""
                           )
                           val token = Jwt.encode(claims, "super-secret-key", JwtAlgorithm.HS256)
-
                           complete(HttpResponse(StatusCodes.OK, entity = s"""{"token": "$token"}"""))
 
                         case scala.util.Success(None) =>
                           complete(HttpResponse(StatusCodes.Unauthorized, entity = """{"message": "Email ou mot de passe incorrect"}"""))
 
                         case scala.util.Failure(ex) =>
-                          complete(HttpResponse(StatusCodes.InternalServerError, entity = s"Erreur de connexion: ${ex.getMessage}"))
+                          complete(HttpResponse(StatusCodes.InternalServerError, entity = s"""{"error": "Erreur de connexion: ${ex.getMessage}"}"""))
                       }
 
                     case None =>
-                      complete(HttpResponse(StatusCodes.InternalServerError, entity = "Erreur: userActor non initialisé"))
+                      complete(HttpResponse(StatusCodes.InternalServerError, entity = """{"error": "userActor non initialisé"}"""))
                   }
                 }
               }
@@ -223,7 +197,7 @@ object HttpServer {
                       case scala.util.Success(_) =>
                         complete(HttpResponse(StatusCodes.OK, entity = s"""{"message": "Dépôt réussi", "amount": "$amount"}"""))
                       case scala.util.Failure(ex) =>
-                        complete(HttpResponse(StatusCodes.InternalServerError, entity = s"Erreur: ${ex.getMessage}"))
+                        complete(HttpResponse(StatusCodes.InternalServerError, entity = s"""{"error": "${ex.getMessage}"}"""))
                     }
                   }
                 }
@@ -242,13 +216,19 @@ object HttpServer {
                           )(timeout, scheduler)
                           onComplete(userFuture) {
                             case scala.util.Success(Right(user)) =>
-                              // Création d'un portefeuille par défaut pour l'utilisateur
                               val defaultPortfolioName = s"Portefeuille de ${user.username}"
                               onComplete(portfolioRepo.createPortfolio(user.id, defaultPortfolioName)) {
                                 case scala.util.Success(portfolio) =>
+                                  // Génération du token JWT pour l'utilisateur nouvellement inscrit
+                                  val claims = JwtClaim(
+                                    expiration = Some(Instant.now.plusSeconds(3600).getEpochSecond),
+                                    issuedAt = Some(Instant.now.getEpochSecond),
+                                    content = s"""{"userId": ${user.id}, "email": "${user.email}"}"""
+                                  )
+                                  val token = Jwt.encode(claims, "super-secret-key", JwtAlgorithm.HS256)
                                   complete(HttpResponse(
                                     StatusCodes.Created,
-                                    entity = s"""{"message": "Utilisateur et portefeuille créés avec succès", "portfolioId": ${portfolio.id}}"""
+                                    entity = s"""{"message": "Utilisateur et portefeuille créés avec succès", "portfolioId": ${portfolio.id}, "token": "$token"}"""
                                   ))
                                 case scala.util.Failure(ex) =>
                                   complete(HttpResponse(
@@ -257,19 +237,19 @@ object HttpServer {
                                   ))
                               }
                             case scala.util.Success(Left(errorMessage)) =>
-                              complete(HttpResponse(StatusCodes.BadRequest, entity = s"""{"message": "$errorMessage"}"""))
+                              complete(HttpResponse(StatusCodes.BadRequest, entity = s"""{"error": "$errorMessage"}"""))
                             case scala.util.Failure(ex) =>
-                              complete(HttpResponse(StatusCodes.InternalServerError, entity = s"""{"message": "Erreur serveur: ${ex.getMessage}"}"""))
+                              complete(HttpResponse(StatusCodes.InternalServerError, entity = s"""{"error": "Erreur serveur: ${ex.getMessage}"}"""))
                           }
                         case None =>
-                          complete(HttpResponse(StatusCodes.InternalServerError, entity = """{"message": "Erreur: userActor non initialisé"}"""))
+                          complete(HttpResponse(StatusCodes.InternalServerError, entity = """{"error": "userActor non initialisé"}"""))
                       }
                     case None =>
-                      complete(HttpResponse(StatusCodes.BadRequest, entity = """{"message": "Requête invalide : champs manquants"}"""))
+                      complete(HttpResponse(StatusCodes.BadRequest, entity = """{"error": "Requête invalide : champs manquants"}"""))
                   }
                 }
               }
-            }~
+            } ~
             // Endpoint pour récupérer le solde du wallet (fonds déposés)
             path("wallet-balance") {
               get {
@@ -279,7 +259,7 @@ object HttpServer {
                     case scala.util.Success(balance) =>
                       complete(HttpResponse(StatusCodes.OK, entity = s"""{"walletBalance": "$balance"}"""))
                     case scala.util.Failure(ex) =>
-                      complete(HttpResponse(StatusCodes.InternalServerError, entity = s"Erreur: ${ex.getMessage}"))
+                      complete(HttpResponse(StatusCodes.InternalServerError, entity = s"""{"error": "${ex.getMessage}"}"""))
                   }
                 }
               }
@@ -293,7 +273,7 @@ object HttpServer {
                     case scala.util.Success(portfolios) =>
                       complete(HttpResponse(StatusCodes.OK, entity = portfolios.asJson.noSpaces))
                     case scala.util.Failure(ex) =>
-                      complete(HttpResponse(StatusCodes.InternalServerError, entity = s"Erreur: ${ex.getMessage}"))
+                      complete(HttpResponse(StatusCodes.InternalServerError, entity = s"""{"error": "${ex.getMessage}"}"""))
                   }
                 }
               }
@@ -309,7 +289,7 @@ object HttpServer {
                       case scala.util.Success(portfolio) =>
                         complete(HttpResponse(StatusCodes.Created, entity = portfolio.asJson.noSpaces))
                       case scala.util.Failure(ex) =>
-                        complete(HttpResponse(StatusCodes.InternalServerError, entity = s"Erreur: ${ex.getMessage}"))
+                        complete(HttpResponse(StatusCodes.InternalServerError, entity = s"""{"error": "${ex.getMessage}"}"""))
                     }
                   }
                 }
@@ -323,7 +303,7 @@ object HttpServer {
                     case scala.util.Success(assets) =>
                       complete(HttpResponse(StatusCodes.OK, entity = assets.asJson.noSpaces))
                     case scala.util.Failure(ex) =>
-                      complete(HttpResponse(StatusCodes.InternalServerError, entity = s"Erreur: ${ex.getMessage}"))
+                      complete(HttpResponse(StatusCodes.InternalServerError, entity = s"""{"error": "${ex.getMessage}"}"""))
                   }
                 }
               }
@@ -359,25 +339,25 @@ object HttpServer {
                                     case scala.util.Success(_) =>
                                       complete(HttpResponse(StatusCodes.Created, entity = """{"message": "Actif acheté et transaction enregistrée"}"""))
                                     case scala.util.Failure(ex) =>
-                                      complete(HttpResponse(StatusCodes.InternalServerError, entity = s"Erreur lors de l'enregistrement de la transaction: ${ex.getMessage}"))
+                                      complete(HttpResponse(StatusCodes.InternalServerError, entity = s"""{"error": "Erreur lors de l'enregistrement de la transaction: ${ex.getMessage}"}"""))
                                   }
                                 case scala.util.Failure(ex) =>
-                                  complete(HttpResponse(StatusCodes.InternalServerError, entity = s"Erreur lors de l'ajout de l'actif: ${ex.getMessage}"))
+                                  complete(HttpResponse(StatusCodes.InternalServerError, entity = s"""{"error": "Erreur lors de l'ajout de l'actif: ${ex.getMessage}"}"""))
                               }
                             } else {
                               complete(HttpResponse(StatusCodes.BadRequest, entity = """{"message": "Solde insuffisant pour réaliser l'achat"}"""))
                             }
                           case scala.util.Failure(ex) =>
-                            complete(HttpResponse(StatusCodes.InternalServerError, entity = s"Erreur: ${ex.getMessage}"))
+                            complete(HttpResponse(StatusCodes.InternalServerError, entity = s"""{"error": "${ex.getMessage}"}"""))
                         }
                       case scala.util.Failure(ex) =>
-                        complete(HttpResponse(StatusCodes.InternalServerError, entity = s"Erreur lors de la récupération du prix: ${ex.getMessage}"))
+                        complete(HttpResponse(StatusCodes.InternalServerError, entity = s"""{"error": "Erreur lors de la récupération du prix: ${ex.getMessage}"}"""))
                     }
                   }
                 }
               }
             } ~
-            // Nouveau endpoint pour la vente d'un actif dans un portefeuille
+            // Endpoint pour la vente d'un actif dans un portefeuille
             path("portfolios" / IntNumber / "sell") { portfolioId =>
               post {
                 entity(as[String]) { sellJson =>
@@ -411,19 +391,19 @@ object HttpServer {
                                       case scala.util.Success(_) =>
                                         complete(HttpResponse(StatusCodes.OK, entity = s"""{"message": "Actif vendu, compte crédité de $saleValue"}"""))
                                       case scala.util.Failure(ex) =>
-                                        complete(HttpResponse(StatusCodes.InternalServerError, entity = s"Erreur lors de l'enregistrement de la transaction: ${ex.getMessage}"))
+                                        complete(HttpResponse(StatusCodes.InternalServerError, entity = s"""{"error": "Erreur lors de l'enregistrement de la transaction: ${ex.getMessage}"}"""))
                                     }
                                   case scala.util.Failure(ex) =>
-                                    complete(HttpResponse(StatusCodes.InternalServerError, entity = s"Erreur lors du crédit du compte: ${ex.getMessage}"))
+                                    complete(HttpResponse(StatusCodes.InternalServerError, entity = s"""{"error": "Erreur lors du crédit du compte: ${ex.getMessage}"}"""))
                                 }
                               case scala.util.Failure(ex) =>
-                                complete(HttpResponse(StatusCodes.BadRequest, entity = s"Erreur lors de la vente: ${ex.getMessage}"))
+                                complete(HttpResponse(StatusCodes.BadRequest, entity = s"""{"error": "Erreur lors de la vente: ${ex.getMessage}"}"""))
                             }
                           case scala.util.Failure(ex) =>
-                            complete(HttpResponse(StatusCodes.InternalServerError, entity = s"Erreur lors de la récupération du prix: ${ex.getMessage}"))
+                            complete(HttpResponse(StatusCodes.InternalServerError, entity = s"""{"error": "Erreur lors de la récupération du prix: ${ex.getMessage}"}"""))
                         }
                       case Left(_) =>
-                        complete(HttpResponse(StatusCodes.BadRequest, entity = """{"message": "JSON invalide"}"""))
+                        complete(HttpResponse(StatusCodes.BadRequest, entity = """{"error": "JSON invalide"}"""))
                     }
                   }
                 }
@@ -437,24 +417,26 @@ object HttpServer {
                     case scala.util.Success(perfData) =>
                       complete(HttpResponse(StatusCodes.OK, entity = perfData.asJson.noSpaces))
                     case scala.util.Failure(ex) =>
-                      complete(HttpResponse(StatusCodes.InternalServerError, entity = s"Erreur: ${ex.getMessage}"))
+                      complete(HttpResponse(StatusCodes.InternalServerError, entity = s"""{"error": "${ex.getMessage}"}"""))
                   }
                 }
               }
             } ~
+            // GET global-balance
             path("global-balance") {
               get {
                 headerValueByName("Authorization") { token =>
                   val userId = decodeUserIdFromToken(token)
                   onComplete(balanceService.calculateGlobalBalance(userId)) {
                     case scala.util.Success(balance) =>
-                      complete(HttpResponse(StatusCodes.OK, entity = s"""{"globalBalance": "$balance"}"""))
+                      complete(HttpResponse(StatusCodes.OK, entity = s"""{"globalBalance": $balance}"""))
                     case scala.util.Failure(ex) =>
-                      complete(HttpResponse(StatusCodes.InternalServerError, entity = s"Erreur: ${ex.getMessage}"))
+                      complete(HttpResponse(StatusCodes.InternalServerError, entity = s"""{"error": "${ex.getMessage}"}"""))
                   }
                 }
               }
             } ~
+            // GET account-summary
             path("account-summary") {
               get {
                 headerValueByName("Authorization") { token =>
@@ -463,12 +445,12 @@ object HttpServer {
                     case scala.util.Success(summary) =>
                       complete(HttpResponse(StatusCodes.OK, entity = summary.asJson.noSpaces))
                     case scala.util.Failure(ex) =>
-                      complete(HttpResponse(StatusCodes.InternalServerError, entity = s"Erreur: ${ex.getMessage}"))
+                      complete(HttpResponse(StatusCodes.InternalServerError, entity = s"""{"error": "${ex.getMessage}"}"""))
                   }
                 }
               }
             } ~
-            // GET de l'historique des transactions pour un portefeuille
+            // GET historique des transactions pour un portefeuille
             path("portfolios" / IntNumber / "transactions") { portfolioId =>
               get {
                 headerValueByName("Authorization") { token =>
@@ -476,7 +458,7 @@ object HttpServer {
                     case scala.util.Success(transactions) =>
                       complete(HttpResponse(StatusCodes.OK, entity = transactions.asJson.noSpaces))
                     case scala.util.Failure(ex) =>
-                      complete(HttpResponse(StatusCodes.InternalServerError, entity = s"Erreur: ${ex.getMessage}"))
+                      complete(HttpResponse(StatusCodes.InternalServerError, entity = s"""{"error": "${ex.getMessage}"}"""))
                   }
                 }
               }
@@ -491,16 +473,22 @@ object HttpServer {
 
     val route = restRoute ~ webSocketRoute
 
-    Http()(classicSystem).newServerAt("localhost", 8080).bind(route)
+    Http()(classicSystem).newServerAt("0.0.0.0", 8080).bind(route)
     println("Server started at http://localhost:8080")
   }
 
   def marketDataFlow: Flow[Message, Message, _] = {
+    import akka.actor.typed.scaladsl.AskPattern._
     val source: Source[Message, _] = Source
       .tick(0.seconds, 30.seconds, "tick")
       .mapAsync(1) { _ =>
-        import akka.actor.typed.scaladsl.AskPattern._
-        marketDataActor.get.ask[MarketData](ref => MarketDataActor.GetMarketData(ref))(timeout, scheduler)
+        marketDataActor match {
+          case Some(actorRef) =>
+            actorRef.ask[MarketData](ref => MarketDataActor.GetMarketData(ref))(timeout, scheduler)
+          case None =>
+            // Si l'acteur n'est pas encore disponible, renvoyer un objet MarketData vide
+            scala.concurrent.Future.successful(MarketData(Nil, Map.empty, Map.empty))
+        }
       }
       .map { marketData: MarketData =>
         TextMessage(marketData.asJson.noSpaces)
@@ -513,72 +501,61 @@ object HttpServer {
   }
 
   def parseCredentials(json: String): Credentials = {
-  parse(json) match {
-    case Right(jsonData) =>
-      val email = jsonData.hcursor.downField("email").as[String].getOrElse("")
-      val password = jsonData.hcursor.downField("password").as[String].getOrElse("")
-      println(s"[DEBUG] JSON reçu : $json") // ✅ Ajoute un log
-      println(s"[DEBUG] Email extrait : $email")
-      println(s"[DEBUG] Password extrait : $password")
-      Credentials(email, password)
-
-    case Left(_) =>
-      println("[DEBUG] Erreur lors du parsing JSON")
-      Credentials("", "")
+    parse(json) match {
+      case Right(jsonData) =>
+        val email = jsonData.hcursor.downField("email").as[String].getOrElse("")
+        val password = jsonData.hcursor.downField("password").as[String].getOrElse("")
+        println(s"[DEBUG] JSON reçu : $json")
+        println(s"[DEBUG] Email extrait : $email")
+        println(s"[DEBUG] Password extrait : $password")
+        Credentials(email, password)
+      case Left(_) =>
+        println("[DEBUG] Erreur lors du parsing JSON")
+        Credentials("", "")
+    }
   }
-}
+
   def parseUserRegistration(json: String): Option[User] = {
     parse(json) match {
       case Right(jsonData) =>
         val username = jsonData.hcursor.downField("username").as[String].getOrElse("")
         val email = jsonData.hcursor.downField("email").as[String].getOrElse("")
         val password = jsonData.hcursor.downField("password").as[String].getOrElse("")
-
-        if (username.nonEmpty && email.nonEmpty && password.nonEmpty) {
+        if (username.nonEmpty && email.nonEmpty && password.nonEmpty)
           Some(User(0, username, email, password, isVerified = false, java.time.LocalDateTime.now()))
-        } else {
-          None
-        }
+        else None
       case Left(_) => None
     }
   }
-  // def decodeUserIdFromToken(token: String): Int = 1
-
-  import pdi.jwt.{Jwt, JwtAlgorithm, JwtClaim}
-  import io.circe.parser._
 
   def decodeUserIdFromToken(token: String): Int = {
     try {
-      // Supprime "Bearer " du token si présent
       val jwtToken = token.replace("Bearer ", "")
       println(s"[DEBUG] Token reçu: $jwtToken")
-      // Décode le JWT
       Jwt.decode(jwtToken, "super-secret-key", Seq(JwtAlgorithm.HS256)) match {
         case Success(claim) =>
-          // Parse le contenu du JWT
           parse(claim.content) match {
             case Right(json) =>
               json.hcursor.downField("userId").as[Int] match {
                 case Right(userId) => userId
-                case Left(_) => 
+                case Left(_) =>
                   println("[ERROR] Impossible d'extraire userId du token")
                   -1
               }
-            case Left(_) => 
+            case Left(_) =>
               println("[ERROR] Impossible de parser le JWT")
               -1
           }
-        case Failure(_) => 
+        case Failure(_) =>
           println("[ERROR] JWT invalide")
           -1
       }
     } catch {
-      case e: Exception => 
+      case e: Exception =>
         println(s"[ERROR] Erreur lors du décodage du token: ${e.getMessage}")
         -1
     }
   }
-
 
   def parsePortfolioName(json: String): String = {
     parse(json) match {

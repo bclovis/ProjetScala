@@ -1,3 +1,4 @@
+/*/src/styles/LoginPage.css*/
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap');
 
 {
@@ -14,11 +15,11 @@
     flex-direction: column;
     height: 100vh;
     background-color: #39539f;
-    background: linear-gradient(to right, #424141, #504f4f);
+    background: linear-gradient(to right, #242732, #242732);
 }
 
 .container{
-    background-color: #4e4c4c;
+    background-color: #242732;
     border-radius: 30px;
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.35);
     position: relative;
@@ -161,10 +162,10 @@
 }
 
 .toggle{
-    background-color: #512da8;
+    background-color: #242833;
     height: 100%;
-    background: linear-gradient(to right, #453f3f, #5d5b60);
-    color: #fff;
+    background: linear-gradient(to right, #242732, #242732);
+    color: #d1d7e1;
     position: relative;
     left: -100%;
     height: 100%;

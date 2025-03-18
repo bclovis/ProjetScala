@@ -27,8 +27,10 @@ const RegisterPage = () => {
             const data = await response.json();
             if (!response.ok) throw new Error(data.message || "Échec de l'inscription");
 
-            setSuccess("Compte créé avec succès ! Redirection...");
-            setTimeout(() => navigate("/login"), 2000); // ✅ Redirige après 2 secondes
+            // Stocker le token renvoyé par le backend
+            localStorage.setItem("token", data.token);
+            // Rediriger immédiatement vers le dashboard
+            navigate("/dashboard");
         } catch (err) {
             setError(err.message);
         }

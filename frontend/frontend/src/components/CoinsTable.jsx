@@ -3,11 +3,17 @@ import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper
 import CoinInfo from "./CoinInfo";
 
 const CoinsTable = ({ portfolioId, token, walletBalance, availableBalance, onAssetAdded }) => {
+const CoinsTable = ({ portfolioId, token, walletBalance, availableBalance, onAssetAdded }) => {
   const [category, setCategory] = useState("crypto"); // Catégorie sélectionnée
   const [searchTerm, setSearchTerm] = useState(""); // Recherche utilisateur
   const [assets, setAssets] = useState([]); // Stockage des actifs (crypto, actions, devises)
   const socketRef = useRef(null);
   const [selectedCoin, setSelectedCoin] = useState(null); // Stockage de l'actif sélectionné
+
+  console.log("availableBalance:", availableBalance); // Ajoutez ce log pour vérifier availableBalance
+  console.log("portfolioId:", portfolioId); // Ajoutez ce log pour vérifier portfolioId
+  console.log("token:", token); // Ajoutez ce log pour vérifier token
+
 
   console.log("availableBalance:", availableBalance); // Ajoutez ce log pour vérifier availableBalance
   console.log("portfolioId:", portfolioId); // Ajoutez ce log pour vérifier portfolioId
@@ -21,8 +27,8 @@ const CoinsTable = ({ portfolioId, token, walletBalance, availableBalance, onAss
     const pastTimestamp = Date.now() - hours * 60 * 60 * 1000;
 
     // Trouver le prix passé le plus proche
-    const pastPriceObj = prices.reduce((closest, current) => 
-        Math.abs(current.timestamp - pastTimestamp) < Math.abs(closest.timestamp - pastTimestamp) ? current : closest, 
+    const pastPriceObj = prices.reduce((closest, current) =>
+            Math.abs(current.timestamp - pastTimestamp) < Math.abs(closest.timestamp - pastTimestamp) ? current : closest,
         prices[0] // Initialisation avec le premier prix
     );
 
@@ -30,6 +36,7 @@ const CoinsTable = ({ portfolioId, token, walletBalance, availableBalance, onAss
 
     // Calcul du changement en pourcentage
     return pastPrice !== 0 ? ((latestPrice - pastPrice) / pastPrice) * 100 : 0;
+  };
   };
 
   useEffect(() => {
@@ -55,7 +62,7 @@ const CoinsTable = ({ portfolioId, token, walletBalance, availableBalance, onAss
                 setAssets([]); // Réinitialiser pour éviter l'affichage de données invalides
             }
         } catch (error) {
-            console.error("Erreur de parsing JSON :", error);
+          console.error("Erreur de parsing JSON :", error);
         }
       };
     
@@ -87,66 +94,66 @@ const CoinsTable = ({ portfolioId, token, walletBalance, availableBalance, onAss
     const name = asset.longName ? asset.longName.toLowerCase() : "";
     return symbol.includes(searchTerm.toLowerCase()) || name.includes(searchTerm.toLowerCase());
   });
-  
-  return (
-    <div style={{ padding: "20px", backgroundColor: "#121212", color: "white" }}>
-      {/* Barre de recherche + Sélecteur de catégorie */}
-      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "10px" }}>
-        <TextField
-          variant="outlined"
-          placeholder="Search here..."
-          onChange={(e) => setSearchTerm(e.target.value)}
-          InputProps={{ style: { color: "white" } }}
-          sx={{ backgroundColor: "#1e1e1e", width: "40%" }}
-        />
-        <Select
-          value={category}
-          onChange={(e) => setCategory(e.target.value)}
-          sx={{ backgroundColor: "#1e1e1e", color: "white" }}
-        >
-          <MenuItem value="crypto">Cryptomonnaies</MenuItem>
-          <MenuItem value="stocks">Actions</MenuItem>
-          <MenuItem value="forex">Devises</MenuItem>
-        </Select>
-      </div>
 
-      {/* Tableau des actifs */}
-      <TableContainer component={Paper} style={{ backgroundColor: "#1e1e1e", color: "white" }}>
-        <Table>
-          <TableHead>
-            <TableRow style={{ backgroundColor: "#2a2a2a" }}>
-              <TableCell align="center"><b>Asset</b></TableCell>
-              <TableCell align="center"><b>Name</b></TableCell>
-              <TableCell align="center"><b>Price</b></TableCell>
-              <TableCell align="center"><b>Market Cap Change</b></TableCell>
-              <TableCell align="center"><b>1H</b></TableCell>
-              <TableCell align="center"><b>24H</b></TableCell>
-              <TableCell align="center"><b>7D</b></TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {filteredAssets.map((asset) => (
-              <TableRow key={asset.symbol} style={{ cursor: "pointer" }} onClick={() => setSelectedCoin(asset)}>
-                <TableCell align="center">{asset.symbol}</TableCell>
-                <TableCell align="center">{asset.longName}</TableCell>
-                <TableCell align="center">${asset.prices ? asset.prices[asset.prices.length - 1].price.toFixed(2) : "N/A"}</TableCell>
-                <TableCell align="center" style={{ color: asset.change < 0 ? "red" : "lightgreen" }}>
-                    {asset.change ? asset.change.toFixed(3) + "%" : "N/A"}
-                </TableCell>
-                <TableCell align="center" style={{ color: calculateChange(asset.prices, 1) < 0 ? "red" : "lightgreen" }}>
-                    {calculateChange(asset.prices, 1).toFixed(3) + "%"}
-                </TableCell>
-                <TableCell align="center" style={{ color: calculateChange(asset.prices, 24) < 0 ? "red" : "lightgreen" }}>
-                    {calculateChange(asset.prices, 24).toFixed(3) + "%"}
-                </TableCell>
-                <TableCell align="center" style={{ color: calculateChange(asset.prices, 168) < 0 ? "red" : "lightgreen" }}>
-                    {calculateChange(asset.prices, 168).toFixed(3) + "%"}
-                </TableCell>
+  return (
+      <div style={{ padding: "20px", backgroundColor: "#121212", color: "white" }}>
+        {/* Barre de recherche + Sélecteur de catégorie */}
+        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "10px" }}>
+          <TextField
+              variant="outlined"
+              placeholder="Search here..."
+              onChange={(e) => setSearchTerm(e.target.value)}
+              InputProps={{ style: { color: "white" } }}
+              sx={{ backgroundColor: "#1e1e1e", width: "40%" }}
+          />
+          <Select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              sx={{ backgroundColor: "#1e1e1e", color: "white" }}
+          >
+            <MenuItem value="crypto">Cryptomonnaies</MenuItem>
+            <MenuItem value="stocks">Actions</MenuItem>
+            <MenuItem value="forex">Devises</MenuItem>
+          </Select>
+        </div>
+
+        {/* Tableau des actifs */}
+        <TableContainer component={Paper} style={{ backgroundColor: "#1e1e1e", color: "white" }}>
+          <Table>
+            <TableHead>
+              <TableRow style={{ backgroundColor: "#2a2a2a" }}>
+                <TableCell align="center"><b>Asset</b></TableCell>
+                <TableCell align="center"><b>Name</b></TableCell>
+                <TableCell align="center"><b>Price</b></TableCell>
+                <TableCell align="center"><b>Market Cap Change</b></TableCell>
+                <TableCell align="center"><b>1H</b></TableCell>
+                <TableCell align="center"><b>24H</b></TableCell>
+                <TableCell align="center"><b>7D</b></TableCell>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
+            </TableHead>
+            <TableBody>
+              {filteredAssets.map((asset) => (
+                  <TableRow key={asset.symbol} style={{ cursor: "pointer" }} onClick={() => setSelectedCoin(asset)}>
+                    <TableCell align="center">{asset.symbol}</TableCell>
+                    <TableCell align="center">{asset.longName}</TableCell>
+                    <TableCell align="center">${asset.prices ? asset.prices[asset.prices.length - 1].price.toFixed(2) : "N/A"}</TableCell>
+                    <TableCell align="center" style={{ color: asset.change < 0 ? "red" : "lightgreen" }}>
+                      {asset.change ? asset.change.toFixed(3) + "%" : "N/A"}
+                    </TableCell>
+                    <TableCell align="center" style={{ color: calculateChange(asset.prices, 1) < 0 ? "red" : "lightgreen" }}>
+                      {calculateChange(asset.prices, 1).toFixed(3) + "%"}
+                    </TableCell>
+                    <TableCell align="center" style={{ color: calculateChange(asset.prices, 24) < 0 ? "red" : "lightgreen" }}>
+                      {calculateChange(asset.prices, 24).toFixed(3) + "%"}
+                    </TableCell>
+                    <TableCell align="center" style={{ color: calculateChange(asset.prices, 168) < 0 ? "red" : "lightgreen" }}>
+                      {calculateChange(asset.prices, 168).toFixed(3) + "%"}
+                    </TableCell>
+                  </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
 
       <Dialog open={Boolean(selectedCoin)} onClose={() => setSelectedCoin(null)} fullWidth maxWidth="md">
       {selectedCoin && (

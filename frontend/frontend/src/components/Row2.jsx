@@ -4,6 +4,7 @@ import PropTypes from "prop-types";
 import DashboardBox from "@/components/DashboardBox";
 import Overview from "@/components/Overview";
 import PortfolioList from "@/components/portfolio/PortfolioList";
+import AnimatedButton from "./AnimatedButton.jsx";
 
 const Row2 = ({ walletBalance, globalBalance, notifications, portfolios, onSelectPortfolio, selectedPortfolio }) => {
     const navigate = useNavigate();
@@ -27,12 +28,9 @@ const Row2 = ({ walletBalance, globalBalance, notifications, portfolios, onSelec
                     onSelectPortfolio={onSelectPortfolio}
                     selectedPortfolioId={selectedPortfolio}
                 />
-                <button
-                    onClick={handleCreatePortfolio}
-                    className="text-xl font-bold px-2 py-1 bg-green-500 text-white rounded"
-                >
+                <AnimatedButton onClick={handleCreatePortfolio}>
                     +
-                </button>
+                </AnimatedButton>
             </DashboardBox>
         </>
     );

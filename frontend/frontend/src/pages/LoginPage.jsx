@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "@fortawesome/fontawesome-free/css/all.min.css";
-import "../styles/LoginPage.css"; // Assurez-vous que ce fichier existe
+import "@/styles/LoginPage.css"; // Assurez-vous que ce fichier existe
 
 const LoginPage = () => {
     const [isActive, setIsActive] = useState(false); // false = Sign In, true = Sign Up
@@ -140,12 +140,12 @@ const LoginPage = () => {
                         <div className="toggle-panel toggle-left">
                             <h1>Bienvenue !</h1>
                             <p>Entrez vos identifiants pour vous connecter</p>
-                            <button className="hidden" onClick={() => setIsActive(false)}>Connexion</button>
+                            <button onClick={() => setIsActive(false)}>Connexion</button>
                         </div>
                         <div className="toggle-panel toggle-right">
                             <h1>Rejoignez-nous !</h1>
                             <p>Inscrivez-vous en quelques clics</p>
-                            <button className="hidden" onClick={() => setIsActive(true)}>Inscription</button>
+                            <button onClick={() => setIsActive(true)}>Inscription</button>
                         </div>
                     </div>
                 </div>

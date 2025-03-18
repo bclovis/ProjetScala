@@ -2,8 +2,6 @@
 import React from "react";
 import { useLocation } from "react-router-dom";
 import SellAsset from "../components/actifs/SellAsset.jsx";
-import Header from "../components/Header";
-//import "../styles/LoginPage.css"; // Vous pouvez réutiliser ce style ou adapter
 
 const SellAssetPage = () => {
     const location = useLocation();
@@ -19,7 +17,6 @@ const SellAssetPage = () => {
     return (
         <div className="login-page">
             <div className="container">
-                <Header />
                 <div className="form-container" style={{ padding: "40px" }}>
                     <h1 className="mb-4">Vendre un Actif</h1>
                     <SellAsset portfolioId={portfolioId} token={token} onAssetSold={handleAssetSold} />

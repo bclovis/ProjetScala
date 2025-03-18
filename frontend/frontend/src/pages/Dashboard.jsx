@@ -51,6 +51,7 @@ const Dashboard = () => {
             return;
         }
 
+
         fetch("http://localhost:8080/api/portfolios", {
             method: "GET",
             headers: {
@@ -129,7 +130,18 @@ const Dashboard = () => {
         // Mise à jour des portfolios toutes les 30 secondes
         const interval = setInterval(fetchPortfolios, 30000);
         return () => clearInterval(interval); // Nettoyer l'intervalle en cas de démontage
+
+        // Mise à jour des portfolios toutes les 30 secondes
+        const interval = setInterval(fetchPortfolios, 30000);
+        return () => clearInterval(interval); // Nettoyer l'intervalle en cas de démontage
     }, [navigate, token]);
+
+    // Mettre à jour le localStorage lorsque selectedPortfolio change
+    useEffect(() => {
+        if (selectedPortfolio !== null) {
+            localStorage.setItem("selectedPortfolio", selectedPortfolio);
+        }
+    }, [selectedPortfolio]);
 
     // Mettre à jour le localStorage lorsque selectedPortfolio change
     useEffect(() => {
@@ -157,6 +169,9 @@ const Dashboard = () => {
     console.log("🟢 selectedPortfolio:", selectedPortfolio);
     console.log("🟢 portfolios:", portfolios);
 
+    console.log("🟢 selectedPortfolio:", selectedPortfolio);
+    console.log("🟢 portfolios:", portfolios);
+
     const gridStyle = isAboveMediumScreens
         ? {
             gridTemplateColumns: "repeat(3, minmax(370px, 1fr))",
@@ -180,7 +195,12 @@ const Dashboard = () => {
                 walletBalance={walletBalance}
                 globalBalance={globalBalance}
                 notifications={["Nouveau listing: SOL", "Attention: Mise à jour de sécurité disponible"]}
+                notifications={["Nouveau listing: SOL", "Attention: Mise à jour de sécurité disponible"]}
                 portfolios={portfolios}
+                onSelectPortfolio={(id) => {
+                    setSelectedPortfolio(id);
+                    localStorage.setItem("selectedPortfolio", id);
+                }}
                 onSelectPortfolio={(id) => {
                     setSelectedPortfolio(id);
                     localStorage.setItem("selectedPortfolio", id);
@@ -198,3 +218,4 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
+

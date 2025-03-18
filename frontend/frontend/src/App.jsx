@@ -1,3 +1,4 @@
+//frontend/src/App.jsx
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider, CssBaseline } from "@mui/material";
 import { createTheme } from "@mui/material/styles";
@@ -12,6 +13,7 @@ import DepositPage from "./pages/DepositPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Header from "./components/Header";
 import MarketPage from "./pages/MarketPage";
+import "./index.css"
 
 // Définissez votre thème personnalisé
 const theme = createTheme({

@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import CoinsTable from "../components/CoinsTable";
+import { useNavigate } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 
 const MarketPage = () => {
