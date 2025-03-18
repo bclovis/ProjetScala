@@ -38,10 +38,10 @@ const Row3 = ({ performanceData, selectedPortfolio, token, accountSummary }) => 
                     <PortfolioAssets portfolioId={selectedPortfolio} token={token}/>
                 )}
                 <AnimatedButton onClick={handleAddAsset}>
-                    +
+                    Buy
                 </AnimatedButton>
                 <AnimatedButton onClick={handleSellAsset}>
-                    -
+                    Sell
                 </AnimatedButton>
             </DashboardBox>
             <DashboardBox gridArea="t">

@@ -90,7 +90,7 @@ class MarketDataStreams(implicit system: ActorSystem[_]) {
         stockRecords ++ cryptoRecords ++ forexRecords
       }
       .mapAsync(4) { record =>
-        repo.saveRecord(record)
+        repo.saveRecord(record, 0)
       }
   }
 
@@ -120,7 +120,7 @@ class MarketDataStreams(implicit system: ActorSystem[_]) {
     }
 
     // Insérer tous les enregistrements dans la base
-    Future.sequence(simulatedRecords.map(record => repo.saveRecord(record)))
+    Future.sequence(simulatedRecords.map(record => repo.saveRecord(record, 0)))
   }
 
   def startPersistence(implicit repo: com.portfolio.db.repositories.MarketDataRepository): Unit = {
