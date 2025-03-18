@@ -2,8 +2,6 @@
 import React from "react";
 import { useLocation } from "react-router-dom";
 import SellAsset from "../components/actifs/SellAsset.jsx";
-//import Header from "../components/Header";
-//import "../styles/LoginPage.css"; // Vous pouvez réutiliser ce style ou adapter
 
 const SellAssetPage = () => {
     const location = useLocation();
