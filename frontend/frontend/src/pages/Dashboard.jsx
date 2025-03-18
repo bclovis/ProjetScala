@@ -76,13 +76,16 @@ const Dashboard = () => {
                 "Authorization": `Bearer ${token}`,
             },
         })
-            .then((res) => res.json())
+            .then((res) => {
+                if (!res.ok) {
+                    return res.text().then(text => { throw new Error(text) });
+                }
+                return res.json();
+            })
             .then((data) => {
                 setGlobalBalance(parseFloat(data.globalBalance));
             })
-            .catch((err) =>
-                console.error("Erreur lors du chargement du solde global :", err)
-            );
+            .catch((err) => console.error("Erreur lors du chargement du solde global :", err));
     };
 
     const fetchWalletBalance = () => {
@@ -110,7 +113,12 @@ const Dashboard = () => {
                 "Authorization": `Bearer ${token}`,
             },
         })
-            .then((res) => res.json())
+            .then((res) => {
+                if (!res.ok) {
+                    return res.text().then(text => { throw new Error(text) });
+                }
+                return res.json();
+            })
             .then((data) => {
                 console.log("Résumé du compte :", data);
                 setAccountSummary(data);
