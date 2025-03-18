@@ -47,9 +47,9 @@ case class UserRegistration(username: String, email: String, password: String)
 object HttpServer {
 
   // Configuration de la base de données
-  val dbUrl = "jdbc:postgresql://localhost:5432/portfolio_db"
-  val dbUser = "postgres"
-  val dbPassword = "postgres"
+  val dbUrl = sys.env.getOrElse("DB_URL", "jdbc:postgresql://postgres:5432/portfolio_db")
+  val dbUser = sys.env.getOrElse("DB_USER", "elouanekoka")
+  val dbPassword = sys.env.getOrElse("DB_PASSWORD", "postgres")
 
   // Instanciation des repositories
   val portfolioRepo   = new PortfolioRepository(dbUrl, dbUser, dbPassword)
@@ -465,7 +465,7 @@ object HttpServer {
 
     val route = restRoute ~ webSocketRoute
 
-    Http()(classicSystem).newServerAt("localhost", 8080).bind(route)
+    Http()(classicSystem).newServerAt("0.0.0.0", 8080).bind(route)
     println("Server started at http://localhost:8080")
   }
 

@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   postgres:
     image: postgres:latest
@@ -7,25 +5,43 @@ services:
     environment:
       POSTGRES_USER: elouanekoka
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: projet_scala
+      POSTGRES_DB: portfolio_db
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./initdb:/docker-entrypoint-initdb.d
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U elouanekoka -d portfolio_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   backend:
     build: ./backend
+    container_name: scala_backend
     ports:
       - "8080:8080"
+    environment:
+      - DB_URL=jdbc:postgresql://postgres:5432/portfolio_db
+      - DB_USER=elouanekoka
+      - DB_PASSWORD=postgres
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
+    restart: always
 
   frontend:
-    build: frontend
+    build:
+      context: ./frontend/frontend
+      dockerfile: Dockerfile
+    container_name: react_frontend
     ports:
-      - "3000:3000"
+      - "3000:80"
     depends_on:
       - backend
+    restart: always
 
 volumes:
   postgres_data:
