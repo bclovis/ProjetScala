@@ -37,6 +37,67 @@ import com.portfolio.services.AccountSummaryService
 import com.portfolio.services.BalanceService
 import java.time.LocalDateTime
 import org.mindrot.jbcrypt.BCrypt
+import scala.util.{Success, Failure}
+import akka.pattern.ask
+import akka.util.Timeout
+import scala.concurrent.Future
+import scala.concurrent.ExecutionContext.Implicits.global
+import pdi.jwt.{Jwt, JwtAlgorithm, JwtClaim}
+import java.time.Instant
+import akka.actor.typed.scaladsl.AskPattern._
+import akka.actor.typed.ActorRef
+import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.ActorSystem
+import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.scaladsl.adapter._ // Pour conversion en système classique
+import akka.http.scaladsl.Http
+import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.model.ws.{Message, TextMessage}
+import akka.http.scaladsl.model.headers._
+import akka.http.scaladsl.server.Directives._
+import akka.stream.Materializer
+import akka.stream.scaladsl.{Flow, Sink, Source}
+import scala.concurrent.duration._
+import io.circe.syntax._
+import io.circe.generic.auto._
+import io.circe.parser._
+import com.portfolio.db.repositories.{PortfolioRepository, AssetRepository, PerformanceRepository, MarketDataRepository, UserRepository, UserAccountRepository, TransactionRepository}
+import com.portfolio.actors.{MarketDataActor, UserActor}
+import com.portfolio.models.{MarketData, User, Portfolio, Asset, Transaction}
+import akka.actor.typed.Scheduler
+import akka.actor.typed.receptionist.{Receptionist, ServiceKey}
+import io.circe.parser._
+import io.circe.generic.auto._
+import akka.actor.typed.ActorSystem
+import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.scaladsl.adapter._ // Pour conversion en système classique ff
+import akka.http.scaladsl.Http
+import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.model.ws.{Message, TextMessage}
+import akka.http.scaladsl.model.headers._
+import akka.http.scaladsl.server.Directives._
+import akka.stream.Materializer
+import akka.stream.scaladsl.{Flow, Sink, Source}
+import akka.util.Timeout
+import scala.concurrent.Future
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
+import io.circe.syntax._
+import io.circe.generic.auto._
+import io.circe.parser._
+import akka.http.scaladsl.unmarshalling.Unmarshal
+import com.portfolio.db.repositories.{PortfolioRepository, AssetRepository, PerformanceRepository, MarketDataRepository, UserAccountRepository, TransactionRepository}
+import com.portfolio.actors.MarketDataActor
+import com.portfolio.models.MarketData
+import com.portfolio.models.Transaction
+import akka.actor.typed.Scheduler
+import com.portfolio.services.AccountSummaryService
+import akka.actor.typed.receptionist.{Receptionist, ServiceKey}
+import com.portfolio.services.BalanceService
+import java.time.LocalDateTime
+import org.mindrot.jbcrypt.BCrypt
 
 // Classes d'aide pour le parsing JSON
 case class Credentials(email: String, password: String)
@@ -84,7 +145,7 @@ object HttpServer {
   implicit val timeout: Timeout = Timeout(5.seconds)
   implicit val scheduler: Scheduler = system.scheduler
 
-  val balanceService = new BalanceService(portfolioRepo, assetRepo)(classicSystem, system.executionContext)
+  val balanceService = new BalanceService(portfolioRepo, assetRepo, marketDataRepo)(classicSystem, system.executionContext)
   val accountSummaryService = new AccountSummaryService(portfolioRepo, assetRepo)(classicSystem, system.executionContext)
 
   val marketDataActorKey = ServiceKey[MarketDataActor.Command]("marketDataActor")
@@ -136,7 +197,7 @@ object HttpServer {
   }
 
   def main(args: Array[String]): Unit = {
-    while(marketDataActor.isEmpty) {
+    while (marketDataActor.isEmpty) {
       Thread.sleep(100)
     }
 

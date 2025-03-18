@@ -1,39 +1,86 @@
-  //backend/src/main/scala/com/portfolio/db/repositories/MarketDataRepository.scala
-  package com.portfolio.db.repositories
+package com.portfolio.db.repositories
 
-  import com.portfolio.models.MarketDataRecord
-  import com.portfolio.Database
-  import java.sql.{Statement, Timestamp}
-  import scala.concurrent.{Future, ExecutionContext}
+import com.portfolio.models.MarketDataRecord
+import com.portfolio.Database
+import java.sql.{Connection, PreparedStatement, Statement, Timestamp, ResultSet}
+import java.time.{Instant, OffsetDateTime, ZoneOffset}
+import scala.concurrent.{Future, ExecutionContext}
+import org.slf4j.LoggerFactory
+import scala.math.BigDecimal
 
-  class MarketDataRepository(dbUrl: String, dbUser: String, dbPassword: String) {
-    private def getConnection()(implicit ec: ExecutionContext) = Database.getConnection()
+class MarketDataRepository(dbUrl: String, dbUser: String, dbPassword: String) {
+  private val logger = LoggerFactory.getLogger(getClass)
 
-    def insert(record: MarketDataRecord)(implicit ec: ExecutionContext): Future[Int] = Future {
-      val connection = getConnection()
-      try {
-        val stmt = connection.prepareStatement(
-          "INSERT INTO market_data (time, asset_type, symbol, price_usd) VALUES (?, ?, ?, ?)",
-          Statement.RETURN_GENERATED_KEYS
-        )
-        stmt.setTimestamp(1, Timestamp.from(record.time))
-        stmt.setString(2, record.assetType)
-        stmt.setString(3, record.symbol)
-        stmt.setBigDecimal(4, record.priceUsd.underlying())
-        stmt.executeUpdate()
-        val rs = stmt.getGeneratedKeys
-        rs.next()
-        val id = rs.getInt(1)
-        rs.close()
-        stmt.close()
-        id
-      } finally {
-        connection.close()
+  private def getConnection(): Connection = Database.getConnection()
+
+  /** 🔹 Insère un enregistrement dans la table market_data, incluant portfolio_id */
+  def insert(record: MarketDataRecord, portfolioId: Int)(implicit ec: ExecutionContext): Future[Int] = Future {
+    val connection = getConnection()
+    try {
+      val sql =
+        """INSERT INTO market_data (time, asset_type, symbol, price_usd, portfolio_id)
+          |VALUES (?, ?, ?, ?, ?)
+          |ON CONFLICT (time, symbol)
+          |DO UPDATE SET price_usd = EXCLUDED.price_usd, portfolio_id = EXCLUDED.portfolio_id""".stripMargin
+
+      val stmt: PreparedStatement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)
+
+      // Convertir l'Instant en OffsetDateTime avec fuseau horaire (exemple UTC)
+      val offsetDateTime: OffsetDateTime = record.time.atOffset(ZoneOffset.UTC) // Utilise un autre fuseau horaire si nécessaire
+      val timestamp = Timestamp.from(offsetDateTime.toInstant()) // Convertir en Timestamp
+
+      stmt.setTimestamp(1, timestamp) // Utiliser le Timestamp ajusté avec fuseau horaire
+      stmt.setString(2, record.assetType)
+      stmt.setString(3, record.symbol)
+      stmt.setBigDecimal(4, record.priceUsd.underlying())
+      stmt.setInt(5, portfolioId)  // Ajout du portfolio_id
+
+      val rowsAffected = stmt.executeUpdate()
+      if (rowsAffected == 0) {
+        logger.warn(s"⚠️ Aucune donnée insérée pour ${record.symbol} à ${record.time}")
       }
-    }
 
-    def saveRecord(record: MarketDataRecord)(implicit ec: ExecutionContext): Future[Int] = {
-      // Stub d'implémentation
-      Future.successful(1)
+      val rs = stmt.getGeneratedKeys
+      val id = if (rs.next()) rs.getInt(1) else -1
+      rs.close()
+      stmt.close()
+
+      logger.info(s"✅ Donnée insérée avec succès : $record (ID: $id)")
+      id
+    } catch {
+      case e: Exception =>
+        logger.error(s"❌ Erreur lors de l'insertion de $record : ${e.getMessage}", e)
+        throw e
+    } finally {
+      connection.close()
     }
   }
+
+  /** 🔹 Récupère le dernier prix connu pour un actif donné */
+  def getLatestPrice(symbol: String)(implicit ec: ExecutionContext): Future[Option[BigDecimal]] = Future {
+    val connection = getConnection()
+    try {
+      val sql = "SELECT price_usd FROM market_data WHERE symbol = ? ORDER BY time DESC LIMIT 1"
+      val stmt: PreparedStatement = connection.prepareStatement(sql)
+      stmt.setString(1, symbol)
+
+      val rs: ResultSet = stmt.executeQuery()
+      val price = if (rs.next()) Some(BigDecimal(rs.getBigDecimal("price_usd"))) else None
+
+      rs.close()
+      stmt.close()
+
+      logger.info(s"🔍 Dernier prix récupéré pour $symbol : ${price.getOrElse("Aucune donnée")}")
+      price
+    } catch {
+      case e: Exception =>
+        logger.error(s"❌ Erreur lors de la récupération du dernier prix pour $symbol : ${e.getMessage}", e)
+        None
+    } finally {
+      connection.close()
+    }
+  }
+
+  /** 🔹 Alias pour sauvegarder un enregistrement */
+  def saveRecord(record: MarketDataRecord, portfolioId: Int)(implicit ec: ExecutionContext): Future[Int] = insert(record, portfolioId)
+}

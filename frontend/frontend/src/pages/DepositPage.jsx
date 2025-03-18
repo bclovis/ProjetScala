@@ -34,7 +34,6 @@ const DepositPage = () => {
     return (
         <div className="login-page">
             <div className="container">
-                <Header />
                 <div className="form-container" style={{ padding: "40px" }}>
                     <h1 className="mb-4">Approvisionner le Compte</h1>
                     <form onSubmit={handleDeposit}>

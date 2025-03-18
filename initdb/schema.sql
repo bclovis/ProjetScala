@@ -41,14 +41,14 @@ CREATE TABLE IF NOT EXISTS transactions (
 );
 
 -- Table des prix en temps réel et historique
-CREATE TABLE IF NOT EXISTS market_data (
-                                           id SERIAL PRIMARY KEY,
-                                           time TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-                                           asset_type VARCHAR(10) CHECK (asset_type IN ('crypto', 'stock', 'forex')),
-                                           symbol VARCHAR(10) NOT NULL,
-                                           price_usd DECIMAL(20, 8) NOT NULL,
-                                           volume_24h DECIMAL(20, 8),
-                                           market_cap DECIMAL(20, 8)
+CREATE TABLE market_data (
+                             time         TIMESTAMP WITH TIME ZONE,
+                             symbol       VARCHAR(10),
+                             asset_type   VARCHAR(10),
+                             price_usd    NUMERIC(20, 8),
+                             portfolio_id INTEGER,
+                             PRIMARY KEY (time, symbol),
+                             FOREIGN KEY (portfolio_id) REFERENCES portfolios(id) ON DELETE CASCADE
 );
 
 -- Index pour accélérer les recherches de prix
@@ -93,6 +93,7 @@ CREATE TABLE IF NOT EXISTS user_accounts (
                                              updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+/*
 -- Insertion de données d'exemple pour AAPL (stock)
 INSERT INTO market_data (time, asset_type, symbol, price_usd, volume_24h, market_cap)
 VALUES
@@ -115,3 +116,4 @@ VALUES
     ('2025-03-05 21:00:00+01', 'forex', 'SEKEUR=X', 1.10, NULL, NULL),
     ('2025-03-05 21:05:00+01', 'forex', 'SEKEUR=X', 1.11, NULL, NULL),
     ('2025-03-05 21:10:00+01', 'forex', 'SEKEUR=X', 1.09, NULL, NULL);
+*/
