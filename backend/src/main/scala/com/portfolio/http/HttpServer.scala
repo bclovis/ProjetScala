@@ -448,7 +448,7 @@ object HttpServer {
                   val userId = decodeUserIdFromToken(token)
                   onComplete(balanceService.calculateGlobalBalance(userId)) {
                     case scala.util.Success(balance) =>
-                      complete(HttpResponse(StatusCodes.OK, entity = s"""{"globalBalance": "$balance"}"""))
+                      complete(HttpResponse(StatusCodes.OK, entity = s"""{"globalBalance": $balance}"""))
                     case scala.util.Failure(ex) =>
                       complete(HttpResponse(StatusCodes.InternalServerError, entity = s"Erreur: ${ex.getMessage}"))
                   }

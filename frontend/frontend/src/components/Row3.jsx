@@ -7,6 +7,7 @@ import AccountSummaryChart from "@/components/AccountSummaryChart";
 import PortfolioChart from "@/components/portfolio/PortfolioChart.jsx";
 import PortfolioAssets from "@/components/portfolio/PortfolioAssets.jsx";
 import TransactionHistory from "@/components/actifs/TransactionHistory.jsx";
+import AnimatedButton from "./AnimatedButton.jsx";
 
 const Row3 = ({ performanceData, selectedPortfolio, token, accountSummary }) => {
     const navigate = useNavigate();
@@ -36,18 +37,12 @@ const Row3 = ({ performanceData, selectedPortfolio, token, accountSummary }) => 
                 {selectedPortfolio && (
                     <PortfolioAssets portfolioId={selectedPortfolio} token={token}/>
                 )}
-                <button
-                    onClick={handleAddAsset}
-                    className="text-xl font-bold px-2 py-1 bg-green-500 text-white rounded"
-                >
+                <AnimatedButton onClick={handleAddAsset}>
                     +
-                </button>
-                <button
-                    onClick={handleSellAsset}
-                    className="text-xl font-bold px-2 py-1 bg-green-500 text-white rounded"
-                >
+                </AnimatedButton>
+                <AnimatedButton onClick={handleSellAsset}>
                     -
-                </button>
+                </AnimatedButton>
             </DashboardBox>
             <DashboardBox gridArea="t">
                 <TransactionHistory portfolioId={selectedPortfolio} token={token}/>
