@@ -65,6 +65,7 @@ object MarketDataActor {
   def fetchYahooPrice(symbol: String, assetType: String)
                      (context: ActorContext[Command])
                      (implicit ec: ExecutionContext, mat: Materializer): Future[MarketPrice] = {
+                      
     val httpSystem = context.system.toClassic
     Http()(httpSystem).singleRequest(HttpRequest(uri = s"https://query1.finance.yahoo.com/v8/finance/chart/$symbol")).flatMap { response =>
       response.entity.toStrict(5.seconds).map { entity =>
