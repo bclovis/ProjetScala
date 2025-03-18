@@ -13,7 +13,7 @@ const Row3 = ({ performanceData, selectedPortfolio, token, accountSummary }) => 
     const navigate = useNavigate();
 
     const handleAddAsset = () => {
-        navigate("/add-asset", { state: { portfolioId: selectedPortfolio } });
+        navigate("/marketpage", { state: { portfolioId: selectedPortfolio } });
     };
 
     const handleSellAsset = () => {
