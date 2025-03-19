@@ -54,35 +54,35 @@ const CoinInfo = ({ coin, portfolioId, token, availableBalance, walletBalance, o
             },
             body: JSON.stringify(assetData)
         })
-        .then(response => {
-            if (!response.ok) {
-                return response.text().then(text => { throw new Error(text); });
-            }
-            return response.json();
-        })
-        .then(data => {
-            console.log("Actif ajouté avec succès:", data);
-            setSnackbarMessage("Actif ajouté avec succès !");
-            setSnackbarSeverity("success");
-            setSnackbarOpen(true);
+            .then(response => {
+                if (!response.ok) {
+                    return response.text().then(text => { throw new Error(text); });
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log("Actif ajouté avec succès:", data);
+                setSnackbarMessage("Actif ajouté avec succès !");
+                setSnackbarSeverity("success");
+                setSnackbarOpen(true);
 
-            if (typeof onAssetAdded === 'function') {
-                onAssetAdded();
-            }
+                if (typeof onAssetAdded === 'function') {
+                    onAssetAdded();
+                }
 
-            setTimeout(() => {
-                navigate("/dashboard"); // Redirige après succès
-            }, 1500);
+                setTimeout(() => {
+                    navigate("/dashboard"); // Redirige après succès
+                }, 1500);
 
-            setOpen(false);
-            setQuantity(0);
-        })
-        .catch(err => {
-            console.error("Erreur lors de l'ajout de l'actif:", err);
-            setSnackbarMessage("Erreur lors de l'ajout de l'actif.");
-            setSnackbarSeverity("error");
-            setSnackbarOpen(true);
-        });
+                setOpen(false);
+                setQuantity(0);
+            })
+            .catch(err => {
+                console.error("Erreur lors de l'ajout de l'actif:", err);
+                setSnackbarMessage("Erreur lors de l'ajout de l'actif.");
+                setSnackbarSeverity("error");
+                setSnackbarOpen(true);
+            });
     };
 
     const handleOpenModal = () => {
@@ -133,7 +133,7 @@ const CoinInfo = ({ coin, portfolioId, token, availableBalance, walletBalance, o
                         fullWidth
                         sx={{ marginTop: 2, backgroundColor: "#00ff99", color: "black" }}
                         onClick={handleSubmit}
-                        disabled={quantity <= 0 || quantity > maxAmount}
+                        disabled={quantity <= 0 || quantity >= maxAmount}
                     >
                         Ajouter au portefeuille
                     </Button>
