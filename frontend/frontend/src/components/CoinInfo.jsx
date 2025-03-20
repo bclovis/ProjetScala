@@ -21,7 +21,7 @@ const CoinInfo = ({ coin, portfolioId, token, availableBalance, walletBalance, o
     const priceData = {
         labels: coin.prices.map(point => {
             const date = new Date(point.timestamp);
-            return date.toLocaleString("fr-FR", { 
+            return date.toLocaleString("fr-FR", {
                 day: "2-digit", month: "2-digit", year: "2-digit",
                 hour: "2-digit", minute: "2-digit"
             });
@@ -40,7 +40,7 @@ const CoinInfo = ({ coin, portfolioId, token, availableBalance, walletBalance, o
             },
         ],
     };
-        
+
     const handleSubmit = () => {
         if (!portfolioId || !token || currentPrice <= 0 || quantity <= 0 || quantity > maxAmount) {
             setSnackbarMessage("Erreur : Paramètres invalides.");
@@ -133,7 +133,7 @@ const CoinInfo = ({ coin, portfolioId, token, availableBalance, walletBalance, o
                         valueLabelDisplay="auto"
                         min={0}
                         max={maxAmount}
-                        step={0.1}
+                        step={0.0001}
                     />
                     <Typography variant="body2">
                         Montant total: {(quantity * currentPrice).toFixed(2)} €

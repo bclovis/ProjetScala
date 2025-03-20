@@ -35,7 +35,7 @@ const LoginPage = () => {
             const data = await response.json();
             if (!response.ok) throw new Error(data.message || "Échec de connexion");
 
-            
+
             localStorage.setItem("token", data.token); // Stocke le JWT
             navigate("/dashboard");
         } catch (err) {

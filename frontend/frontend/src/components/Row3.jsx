@@ -204,7 +204,7 @@ const Row3 = ({ performanceData, selectedPortfolio, token, accountSummary }) => 
             </DashboardBox>
             <DashboardBox gridArea="e">
                 {selectedPortfolio && <PortfolioAssets portfolioId={selectedPortfolio} token={token} />}
-                
+
                 {/* Bouton Buy, redirige vers info marché */}
                 <AnimatedButton onClick={handleAddAsset}>Buy</AnimatedButton>
 

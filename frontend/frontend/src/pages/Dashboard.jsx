@@ -52,7 +52,7 @@ const Dashboard = () => {
             navigate("/login");
             return;
         }
-    
+
         fetch("http://localhost:8080/api/portfolios", {
             method: "GET",
             headers: {
@@ -66,7 +66,7 @@ const Dashboard = () => {
                 localStorage.removeItem("token");
                 navigate("/login");
                 return null;
-            } 
+            }
             if (!res.ok) {
                 throw new Error(`Erreur API: ${res.status}`);
             }
@@ -74,9 +74,9 @@ const Dashboard = () => {
         })
         .then((data) => {
             if (!data) return;
-    
+
             console.log(" API portfolios response:", data);
-    
+
             if (data.length > 0) {
                 setPortfolios(data);
                 if (!selectedPortfolio || !data.some(p => p.id === selectedPortfolio)) {
@@ -92,7 +92,7 @@ const Dashboard = () => {
             console.error(" Erreur lors de la récupération des portfolios:", err);
         });
     };
-        
+
     const fetchGlobalBalance = () => {
         fetch("http://localhost:8080/api/global-balance", {
             method: "GET",
