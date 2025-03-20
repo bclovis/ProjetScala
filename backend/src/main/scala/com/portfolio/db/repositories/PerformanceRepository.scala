@@ -11,7 +11,7 @@ class PerformanceRepository(dbUrl: String, dbUser: String, dbPassword: String) {
 
   private def getConnection(): Connection = Database.getConnection()
 
-  /** 🔹 Récupère les données de performance d'un portefeuille **/
+  /**  Récupère les données de performance d'un portefeuille **/
   def getPerformanceData(portfolioId: Int)(implicit ec: ExecutionContext): Future[PerformanceData] = Future {
     val connection = getConnection()
     try {
@@ -47,7 +47,7 @@ class PerformanceRepository(dbUrl: String, dbUser: String, dbPassword: String) {
     }
   }
 
-  /** 🔹 Récupère les performances d'un portefeuille pour un actif spécifique **/
+  /** Récupère les performances d'un portefeuille pour un actif spécifique **/
   def getPerformanceDataForAsset(portfolioId: Int, symbol: String)(implicit ec: ExecutionContext): Future[PerformanceData] = Future {
     val connection = getConnection()
     try {
@@ -55,7 +55,7 @@ class PerformanceRepository(dbUrl: String, dbUser: String, dbPassword: String) {
         """
           |SELECT date_trunc('minute', md.time) as minute, AVG(md.price_usd) as avg_price
           |FROM market_data md
-          |WHERE md.symbol = ?  -- ✅ Correction ici
+          |WHERE md.symbol = ?
           |AND md.symbol IN (
           |    SELECT pa.symbol FROM portfolio_assets pa WHERE pa.portfolio_id = ?
           |)
@@ -64,8 +64,8 @@ class PerformanceRepository(dbUrl: String, dbUser: String, dbPassword: String) {
         """.stripMargin
 
       val stmt = connection.prepareStatement(sql)
-      stmt.setString(1, symbol)   // ✅ Utilisation correcte du paramètre `symbol`
-      stmt.setInt(2, portfolioId) // ✅ Utilisation correcte du paramètre `portfolioId`
+      stmt.setString(1, symbol)
+      stmt.setInt(2, portfolioId)
       val rs = stmt.executeQuery()
       var labels = List.empty[String]
       var data = List.empty[Double]
