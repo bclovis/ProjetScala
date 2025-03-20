@@ -41,7 +41,7 @@ class MarketDataStreams(implicit system: ActorSystem[_]) {
     "marketDataStreamsSubscriber"
   ))
 
-  // Flow pour WebSocket - envoi périodique des données (toutes les 30 secondes)
+  // Flow pour WebSocket - envoi périodique des données
   def marketDataWebSocketFlow: Flow[Message, Message, _] = {
     val source = Source
       .tick(0.seconds, 30.seconds, "tick")
@@ -58,24 +58,23 @@ class MarketDataStreams(implicit system: ActorSystem[_]) {
   // Flow pour persister les données de marché
   def persistMarketDataFlow(implicit repo: com.portfolio.db.repositories.MarketDataRepository): Source[Int, akka.actor.Cancellable] = {
     Source
-      .tick(0.seconds, 1.minute, "tick") // Pour simuler des mises à jour fréquentes
+      .tick(0.seconds, 1.minute, "tick")
       .filter(_ => marketDataActor.isDefined)
       .mapAsync(1) { _ =>
         marketDataActor.get.ask[MarketData](ref => MarketDataActor.GetMarketData(ref))(timeout, scheduler)
       }
       .mapConcat { marketData =>
-        val now = Instant.now() // Timestamp actuel pour chaque tick
+        val now = Instant.now()
 
-        // Pour simuler une variation (optionnel) :
+        // Simuler une variation
         def simulatePrice(base: Double): Double = base match {
-          case p if p > 0 => p + Random.nextDouble() * 5 - 2.5 // Variation aléatoire ±2.5
+          case p if p > 0 => p + Random.nextDouble() * 5 - 2.5
           case _ => 0.0
         }
 
         // Création des enregistrements en utilisant le timestamp actuel
         val stockRecords = marketData.stocks.map { mp =>
           val latestPrice = mp.prices.lastOption.map(_.price).getOrElse(0.0)
-          // Pour AAPL, par exemple, simuler une légère variation
           val finalPrice = if (mp.symbol.toUpperCase == "AAPL") simulatePrice(latestPrice) else latestPrice
           com.portfolio.models.MarketDataRecord(mp.symbol, BigDecimal(finalPrice), now, mp.assetType)
         }
@@ -100,7 +99,7 @@ class MarketDataStreams(implicit system: ActorSystem[_]) {
   import scala.concurrent.Future
 
   def preloadSimulatedData(implicit repo: com.portfolio.db.repositories.MarketDataRepository): Future[Seq[Int]] = {
-    // Définir le point de départ de l'historique (par exemple, 1 heure dans le passé)
+    // Définir le point de départ de l'historique
     val startTime = Instant.now().minus(1, ChronoUnit.HOURS)
 
     // Générer 60 points de données (1 point par minute pendant 1 heure)
@@ -108,8 +107,8 @@ class MarketDataStreams(implicit system: ActorSystem[_]) {
       val timestamp = startTime.plus(i, ChronoUnit.MINUTES)
       // Simuler des prix pour chaque actif
       val aaplPrice = BigDecimal(230) + BigDecimal(Random.nextDouble() * 10)   // fluctuation autour de 230
-      val btcPrice  = BigDecimal(30000) + BigDecimal(Random.nextDouble() * 1000) // fluctuation autour de 30000
-      val sekeurPrice = BigDecimal(1.1) + BigDecimal(Random.nextDouble() * 0.1)  // fluctuation autour de 1.1
+      val btcPrice  = BigDecimal(30000) + BigDecimal(Random.nextDouble() * 1000)
+      val sekeurPrice = BigDecimal(1.1) + BigDecimal(Random.nextDouble() * 0.1)
 
       // Créer un enregistrement pour chaque actif
       Seq(

@@ -13,7 +13,7 @@ class MarketDataRepository(dbUrl: String, dbUser: String, dbPassword: String) {
 
   private def getConnection(): Connection = Database.getConnection()
 
-  /** 🔹 Insère un enregistrement dans la table market_data, incluant portfolio_id */
+  /** Insère un enregistrement dans la table market_data, incluant portfolio_id */
   def insert(record: MarketDataRecord, portfolioId: Int)(implicit ec: ExecutionContext): Future[Int] = Future {
     val connection = getConnection()
     try {
@@ -25,19 +25,19 @@ class MarketDataRepository(dbUrl: String, dbUser: String, dbPassword: String) {
 
       val stmt: PreparedStatement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)
 
-      // Convertir l'Instant en OffsetDateTime avec fuseau horaire (exemple UTC)
-      val offsetDateTime: OffsetDateTime = record.time.atOffset(ZoneOffset.UTC) // Utilise un autre fuseau horaire si nécessaire
-      val timestamp = Timestamp.from(offsetDateTime.toInstant()) // Convertir en Timestamp
+      // Convertir l'Instant en OffsetDateTime avec fuseau horaire
+      val offsetDateTime: OffsetDateTime = record.time.atOffset(ZoneOffset.UTC)
+      val timestamp = Timestamp.from(offsetDateTime.toInstant())
 
-      stmt.setTimestamp(1, timestamp) // Utiliser le Timestamp ajusté avec fuseau horaire
+      stmt.setTimestamp(1, timestamp)
       stmt.setString(2, record.assetType)
       stmt.setString(3, record.symbol)
       stmt.setBigDecimal(4, record.priceUsd.underlying())
-      stmt.setInt(5, portfolioId)  // Ajout du portfolio_id
+      stmt.setInt(5, portfolioId)
 
       val rowsAffected = stmt.executeUpdate()
       if (rowsAffected == 0) {
-        logger.warn(s"⚠️ Aucune donnée insérée pour ${record.symbol} à ${record.time}")
+        logger.warn(s"Aucune donnée insérée pour ${record.symbol} à ${record.time}")
       }
 
       val rs = stmt.getGeneratedKeys
@@ -45,18 +45,18 @@ class MarketDataRepository(dbUrl: String, dbUser: String, dbPassword: String) {
       rs.close()
       stmt.close()
 
-      logger.info(s"✅ Donnée insérée avec succès : $record (ID: $id)")
+      logger.info(s"Donnée insérée avec succès : $record (ID: $id)")
       id
     } catch {
       case e: Exception =>
-        logger.error(s"❌ Erreur lors de l'insertion de $record : ${e.getMessage}", e)
+        logger.error(s"Erreur lors de l'insertion de $record : ${e.getMessage}", e)
         throw e
     } finally {
       connection.close()
     }
   }
 
-  /** 🔹 Récupère le dernier prix connu pour un actif donné */
+  /** Récupère le dernier prix connu pour un actif donné */
   def getLatestPrice(symbol: String)(implicit ec: ExecutionContext): Future[Option[BigDecimal]] = Future {
     val connection = getConnection()
     try {
@@ -70,17 +70,17 @@ class MarketDataRepository(dbUrl: String, dbUser: String, dbPassword: String) {
       rs.close()
       stmt.close()
 
-      logger.info(s"🔍 Dernier prix récupéré pour $symbol : ${price.getOrElse("Aucune donnée")}")
+      logger.info(s"Dernier prix récupéré pour $symbol : ${price.getOrElse("Aucune donnée")}")
       price
     } catch {
       case e: Exception =>
-        logger.error(s"❌ Erreur lors de la récupération du dernier prix pour $symbol : ${e.getMessage}", e)
+        logger.error(s"Erreur lors de la récupération du dernier prix pour $symbol : ${e.getMessage}", e)
         None
     } finally {
       connection.close()
     }
   }
 
-  /** 🔹 Alias pour sauvegarder un enregistrement */
+  /** Alias pour sauvegarder un enregistrement */
   def saveRecord(record: MarketDataRecord, portfolioId: Int)(implicit ec: ExecutionContext): Future[Int] = insert(record, portfolioId)
 }

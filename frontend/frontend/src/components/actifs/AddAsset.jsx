@@ -22,7 +22,7 @@ const AddAsset = ({ portfolioId, token, onAssetAdded }) => {
             return;
         }
 
-        // Validation de la longueur du symbole (VARCHAR(10))
+        // Validation de la longueur du symbole
         if (normalizedSymbol.length > 10) {
             setError("Le symbole ne doit pas dépasser 10 caractères.");
             return;

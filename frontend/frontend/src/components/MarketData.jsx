@@ -9,7 +9,7 @@ ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, T
 function MarketDashboard() {
     const [marketData, setMarketData] = useState({ stocks: [], crypto: {}, forex: {} });
     const [selectedAsset, setSelectedAsset] = useState(null);
-    const [selectedCategory, setSelectedCategory] = useState('crypto'); // Catégorie par défaut
+    const [selectedCategory, setSelectedCategory] = useState('crypto');
     const [isGraphVisible, setIsGraphVisible] = useState(false);
     const socketRef = useRef(null);
 

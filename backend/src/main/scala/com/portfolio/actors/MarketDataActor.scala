@@ -67,7 +67,7 @@ object MarketDataActor {
                      (implicit ec: ExecutionContext, mat: Materializer): Future[MarketPrice] = {
                       
     val httpSystem = context.system.toClassic
-    Http()(httpSystem).singleRequest(HttpRequest(uri = s"https://query1.finance.yahoo.com/v8/finance/chart/$symbol?range=7d&interval=1m")).flatMap { response =>
+    Http()(httpSystem).singleRequest(HttpRequest(uri = s"https://query1.finance.yahoo.com/v8/finance/chart/$symbol?range=2d&interval=1m")).flatMap { response =>
       response.entity.toStrict(5.seconds).map { entity =>
         val jsonString = entity.data.utf8String
         parse(jsonString) match {

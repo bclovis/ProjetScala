@@ -24,14 +24,14 @@ const Row3 = ({ performanceData, selectedPortfolio, token, accountSummary }) => 
 
     // États pour la gestion de la modale et de l'alerte
     const [openSellModal, setOpenSellModal] = useState(false);
-    const [assets, setAssets] = useState([]); // Liste des actifs à vendre
+    const [assets, setAssets] = useState([]);
     const [selectedAsset, setSelectedAsset] = useState(null);
     const [sellQuantity, setSellQuantity] = useState(0);
     const [snackbarOpen, setSnackbarOpen] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState("");
     const [snackbarSeverity, setSnackbarSeverity] = useState("success");
 
-    // Fonction pour ouvrir la modale et charger les actifs disponibles
+    // Ouvrir la modale et charger les actifs disponibles
     const handleOpenSellModal = () => {
         fetch(`http://localhost:8080/api/portfolios/${selectedPortfolio}/assets`, {
             method: "GET",
@@ -43,20 +43,20 @@ const Row3 = ({ performanceData, selectedPortfolio, token, accountSummary }) => 
             .then((res) => res.json())
             .then((data) => {
                 setAssets(data);
-                if (data.length > 0) setSelectedAsset(data[0]); // Sélectionne le premier actif par défaut
+                if (data.length > 0) setSelectedAsset(data[0]);
                 setSellQuantity(0);
                 setOpenSellModal(true);
             })
             .catch((err) => console.error("Erreur lors de la récupération des actifs :", err));
     };
 
-    // Fonction pour fermer la modale
+    // Fermer la modale
     const handleCloseSellModal = () => {
         setOpenSellModal(false);
         setSelectedAsset(null);
     };
 
-    // Fonction pour vendre un actif
+    // Vendre un actif
     const handleSell = () => {
         if (!selectedAsset || sellQuantity <= 0) return;
 
@@ -86,10 +86,10 @@ const Row3 = ({ performanceData, selectedPortfolio, token, accountSummary }) => 
                 setSnackbarOpen(true);
 
                 setTimeout(() => {
-                    window.location.reload(); // Redirige après succès
+                    window.location.reload();
                 }, 1500);
 
-                handleCloseSellModal(); // Fermer la modale après la vente
+                handleCloseSellModal();
             })
             .catch((err) => {
                 console.error("Erreur :", err);
@@ -119,14 +119,40 @@ const Row3 = ({ performanceData, selectedPortfolio, token, accountSummary }) => 
                             setSelectedAsset(asset);
                             setSellQuantity(0);
                         }}
-                        sx={{ marginBottom: 2 }}
+                        sx={{
+                            marginBottom: 2,
+                            backgroundColor: "#1e1e1e",
+                            color: "white",
+                            borderRadius: "6px",
+                            "& .MuiSelect-select": { color: "white" },
+                        }}
+                        MenuProps={{
+                            PaperProps: {
+                                sx: {
+                                    backgroundColor: "#1e1e1e",
+                                    boxShadow: "none",
+                                    border: "none",
+                                },
+                            },
+                        }}
                     >
                         {assets.map((asset) => (
-                            <MenuItem key={asset.symbol} value={asset.symbol}>
+                            <MenuItem
+                                key={asset.symbol}
+                                value={asset.symbol}
+                                sx={{
+                                    backgroundColor: "#1e1e1e",
+                                    color: "white",
+                                    ":hover": { backgroundColor: "#333", color: "white" },
+                                    "&.Mui-selected": { backgroundColor: "#34d399", color: "black" },
+                                    "&.Mui-selected:hover": { backgroundColor: "#2aa378", color: "black" },
+                                }}
+                            >
                                 {asset.symbol} ({asset.assetType}) - {asset.quantity} dispo
                             </MenuItem>
                         ))}
                     </Select>
+
 
                     {/* Slider pour sélectionner la quantité à vendre */}
                     {selectedAsset && (

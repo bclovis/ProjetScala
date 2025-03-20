@@ -9,28 +9,28 @@ const AnimatedButton = ({ children, onClick, sx, ...props }) => {
             variant="contained"
             onClick={onClick}
             sx={{
-                position: "relative", // Pour le positionnement absolu par rapport à la box parente
-                top: 8,   // ajustez selon vos besoins (8px par exemple)
-                right: 8, // ajustez selon vos besoins (8px par exemple)
-                px: 2,    // réduire le padding horizontal
-                py: 1,    // réduire le padding vertical
-                fontSize: "0.875rem", // taille de police plus petite
-                backgroundColor: "transparent", // ou la couleur souhaitée
+                position: "relative",
+                top: 8,
+                right: 8,
+                px: 2,
+                py: 1,
+                fontSize: "0.875rem",
+                backgroundColor: "transparent",
                 color: "inherit",
                 overflow: "hidden",
-                // Styles du pseudo-élément before
+                // Styles du before
                 "&:before": {
                     content: '""',
                     position: "absolute",
                     top: 0,
                     left: 0,
-                    width: "66.666667%", // 2/3
+                    width: "66.666667%",
                     height: "66.666667%",
                     borderTop: "2px solid white",
                     borderLeft: "2px solid white",
                     transition: "width 0.3s, height 0.3s",
                 },
-                // Styles du pseudo-élément after
+                // Styles du after
                 "&:after": {
                     content: '""',
                     position: "absolute",

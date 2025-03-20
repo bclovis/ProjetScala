@@ -14,18 +14,18 @@ const Row2 = ({ walletBalance, globalBalance, notifications, portfolios, onSelec
     const [snackbarMessage, setSnackbarMessage] = useState("");
     const [snackbarSeverity, setSnackbarSeverity] = useState("success");
 
-    // Fonction pour ouvrir la modale
+    // Ouvrir la modale
     const handleOpenModal = () => {
         setPortfolioName("");
         setOpenModal(true);
     };
 
-    // Fonction pour fermer la modale
+    // Fermer la modale
     const handleCloseModal = () => {
         setOpenModal(false);
     };
 
-    // Fonction pour ajouter un portefeuille
+    // Ajouter un portefeuille
     const handleCreatePortfolio = () => {
         if (!portfolioName.trim()) {
             setSnackbarMessage("Veuillez entrer un nom de portefeuille.");
@@ -56,10 +56,10 @@ const Row2 = ({ walletBalance, globalBalance, notifications, portfolios, onSelec
                 setSnackbarOpen(true);
 
                 setTimeout(() => {
-                    window.location.reload(); // Recharge la page après succès
+                    window.location.reload();
                 }, 1500);
 
-                handleCloseModal(); // Fermer la modale après succès
+                handleCloseModal();
             })
             .catch((err) => {
                 console.error("Erreur :", err);
@@ -111,7 +111,7 @@ const Row2 = ({ walletBalance, globalBalance, notifications, portfolios, onSelec
                     selectedPortfolioId={selectedPortfolio}
                 />
                 <AnimatedButton onClick={handleOpenModal}>
-                    ++++++
+                    ➕
                 </AnimatedButton>
             </DashboardBox>
         </>

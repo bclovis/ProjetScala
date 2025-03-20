@@ -18,17 +18,17 @@ class BalanceService(
                       marketDataRepo: MarketDataRepository
                     )(implicit system: ActorSystem, ec: ExecutionContext) {
 
-  /** 🔹 Récupère le dernier prix stocké en base pour un actif, ou interroge l'API si absent **/
+  /** Récuperer le dernier prix stocké en base pour un actif **/
   def getLatestPrice(symbol: String, portfolioId: Int): Future[BigDecimal] = {
     marketDataRepo.getLatestPrice(symbol).flatMap {
-      case Some(price) => Future.successful(price) // Si trouvé en BDD, on l'utilise
-      case None        => fetchCurrentPrice(symbol, portfolioId) // Passer portfolioId explicitement
+      case Some(price) => Future.successful(price)
+      case None        => fetchCurrentPrice(symbol, portfolioId)
     }
   }
 
-  /** 🔹 Récupère le prix actuel d'un actif via Yahoo Finance et le stocke en base **/
+  /** Récuperer le prix actuel d'un actif via Yahoo et le stocker en base **/
   def fetchCurrentPrice(symbol: String, portfolioId: Int): Future[BigDecimal] = {
-    val url = s"https://query1.finance.yahoo.com/v8/finance/chart/$symbol?range=7d&interval=1m"
+    val url = s"https://query1.finance.yahoo.com/v8/finance/chart/$symbol?range=2d&interval=1m"
 
     Http().singleRequest(HttpRequest(uri = url)).flatMap { response =>
       Unmarshal(response.entity).to[String].flatMap { jsonString =>
@@ -50,9 +50,9 @@ class BalanceService(
                   symbol = symbol,
                   priceUsd = BigDecimal(price),
                   time = Instant.ofEpochSecond(time),
-                  assetType = "forex" // Adapter en fonction du symbole
+                  assetType = "forex"
                 )
-                marketDataRepo.insert(marketData, portfolioId) // Insère en BDD avec portfolioId
+                marketDataRepo.insert(marketData, portfolioId)
                 Future.successful(BigDecimal(price))
 
               case _ =>
@@ -66,21 +66,21 @@ class BalanceService(
     }
   }
 
-  /** 🔹 Calcule le solde total du portefeuille en multipliant quantités et prix, puis l'enregistre en base **/
+  /** Calculer le solde total du portefeuille , puis l'enregistrer en base **/
   def calculateGlobalBalance(userId: Int)(implicit ec: ExecutionContext): Future[BigDecimal] = {
     for {
-      portfolios <- portfolioRepo.getPortfolios(userId) // Récupère les portefeuilles de l'utilisateur
-      assetsList <- Future.sequence(portfolios.map(p => assetRepo.getAssetsForPortfolio(p.id))) // Récupère les actifs pour chaque portefeuille
-      assets = assetsList.flatten // Aplatir la liste des actifs
+      portfolios <- portfolioRepo.getPortfolios(userId)
+      assetsList <- Future.sequence(portfolios.map(p => assetRepo.getAssetsForPortfolio(p.id)))
+      assets = assetsList.flatten
       assetValues <- Future.sequence(assets.map { asset =>
-        getLatestPrice(asset.symbol, asset.portfolioId).map { // Passer portfolioId à getLatestPrice
+        getLatestPrice(asset.symbol, asset.portfolioId).map {
           case price if price > 0 => asset.quantity * price
-          case _ => BigDecimal(0) // Si pas de prix dispo, on met 0
+          case _ => BigDecimal(0)
         }
       })
-      totalBalance = assetValues.sum // Somme des valeurs des actifs
+      totalBalance = assetValues.sum
 
-      _ = println(s"💾 Tentative d'insertion du solde global: $totalBalance USD")
+      _ = println(s" Tentative d'insertion du solde global: $totalBalance USD")
       _ <- Future.sequence(portfolios.map { portfolio =>
         marketDataRepo.insert(
           MarketDataRecord(
@@ -89,16 +89,16 @@ class BalanceService(
             priceUsd = totalBalance,
             time = Instant.now()
           ),
-          portfolio.id // Passer le portfolioId spécifique pour chaque portefeuille
+          portfolio.id
         ).map { id =>
-          println(s"✅ Insertion réussie pour portfolio ${portfolio.id} avec ID: $id")
+          println(s" Insertion réussie pour portfolio ${portfolio.id} avec ID: $id")
         }.recover { case e =>
-          println(s"❌ Erreur lors de l'insertion pour portfolio ${portfolio.id}: ${e.getMessage}")
+          println(s" Erreur lors de l'insertion pour portfolio ${portfolio.id}: ${e.getMessage}")
         }
       })
 
     } yield {
-      println(s"🔢 Solde retourné: $totalBalance USD")
+      println(s"Solde retourné: $totalBalance USD")
       totalBalance
     }
   }

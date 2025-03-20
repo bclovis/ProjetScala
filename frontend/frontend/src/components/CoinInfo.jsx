@@ -33,10 +33,10 @@ const CoinInfo = ({ coin, portfolioId, token, availableBalance, walletBalance, o
                 borderColor: "#00ff99",
                 backgroundColor: "rgba(0,255,153,0.2)",
                 fill: true,
-                tension: 0.4, // Courbe douce
-                pointRadius: 0, // Supprime les points
-                pointHoverRadius: 0, // Supprime les points au survol
-                borderWidth: 2, // Épaisseur de la ligne
+                tension: 0.4,
+                pointRadius: 0,
+                pointHoverRadius: 0,
+                borderWidth: 2,
             },
         ],
     };
@@ -133,7 +133,7 @@ const CoinInfo = ({ coin, portfolioId, token, availableBalance, walletBalance, o
                         valueLabelDisplay="auto"
                         min={0}
                         max={maxAmount}
-                        step={0.0001}
+                        step={0.1}
                     />
                     <Typography variant="body2">
                         Montant total: {(quantity * currentPrice).toFixed(2)} €

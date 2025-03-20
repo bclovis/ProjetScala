@@ -1,6 +1,6 @@
 import React from "react";
 import { Box, Typography, useTheme } from "@mui/material";
-import FlexBetween from "./FlexBetween"; // Assurez-vous que ce composant est disponible
+import FlexBetween from "./FlexBetween";
 
 const BoxHeader = ({ icon, title, subtitle, sideText }) => {
     const { palette } = useTheme();
@@ -8,7 +8,7 @@ const BoxHeader = ({ icon, title, subtitle, sideText }) => {
         <FlexBetween color={palette.grey[400]} margin="1.5rem 1rem 0 1rem">
             <FlexBetween>
                 {icon}
-                <Box width="100%">
+                <Box  width="100%">
                     <Typography variant="h4" mb="-0.1rem">
                         {title}
                     </Typography>
