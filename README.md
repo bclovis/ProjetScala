@@ -103,11 +103,10 @@ Backend
 	•	Assurez-vous d’avoir Java et SBT installés.
 	•	Dans le dossier backend, compilez le projet :
 
+Pour lancer le Docker
 
+	•	docker-compose up --build
 
-	•	Avec Docker :
-
-docker-compose up --build
 
 Puis aller sur le localhost:3000
 
