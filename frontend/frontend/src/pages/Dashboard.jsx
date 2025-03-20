@@ -46,11 +46,13 @@ const Dashboard = () => {
     });
 
     const fetchPortfolios = () => {
+        const token = localStorage.getItem("token");
         if (!token) {
+            console.error("⚠️ Aucun token trouvé, redirection vers la connexion.");
             navigate("/login");
             return;
         }
-
+    
         fetch("http://localhost:8080/api/portfolios", {
             method: "GET",
             headers: {
@@ -58,28 +60,39 @@ const Dashboard = () => {
                 "Authorization": `Bearer ${token}`,
             },
         })
-            .then((res) => res.json())
-            .then((data) => {
-                console.log("API portfolios response:", data); // 🔍 Vérifier ce que l'API retourne
-
-                if (data && data.length > 0) {
-                    setPortfolios(data);
-
-                    // Si selectedPortfolio est null ou n'existe plus, on prend le premier dispo
-                    if (!selectedPortfolio || !data.some(p => p.id === selectedPortfolio)) {
-                        setSelectedPortfolio(data[0].id);
-                        localStorage.setItem("selectedPortfolio", data[0].id);
-                    }
-                } else {
-                    console.warn("⚠️ L'API a retourné un tableau vide pour portfolios !");
-                    setPortfolios([]); // Empêche les erreurs de rendu
+        .then((res) => {
+            if (res.status === 401) {
+                console.warn("⚠️ Token expiré. Déconnexion en cours...");
+                localStorage.removeItem("token");
+                navigate("/login");
+                return null;
+            } 
+            if (!res.ok) {
+                throw new Error(`Erreur API: ${res.status}`);
+            }
+            return res.json();
+        })
+        .then((data) => {
+            if (!data) return;
+    
+            console.log("📡 API portfolios response:", data);
+    
+            if (data.length > 0) {
+                setPortfolios(data);
+                if (!selectedPortfolio || !data.some(p => p.id === selectedPortfolio)) {
+                    setSelectedPortfolio(data[0].id);
+                    localStorage.setItem("selectedPortfolio", data[0].id);
                 }
-            })
-            .catch((err) => {
-                console.error("Erreur lors de la récupération des portfolios:", err);
-            });
+            } else {
+                console.warn("⚠️ Aucun portefeuille trouvé !");
+                setPortfolios([]); // Garde l'état propre
+            }
+        })
+        .catch((err) => {
+            console.error("❌ Erreur lors de la récupération des portfolios:", err);
+        });
     };
-
+        
     const fetchGlobalBalance = () => {
         fetch("http://localhost:8080/api/global-balance", {
             method: "GET",

@@ -109,7 +109,7 @@ object HttpServer {
 
   // Configuration de la base de données
   val dbUrl = sys.env.getOrElse("DB_URL", "jdbc:postgresql://postgres:5432/portfolio_db")
-  val dbUser = sys.env.getOrElse("DB_USER", "elouanekoka")
+  val dbUser = sys.env.getOrElse("DB_USER", "postgres")
   val dbPassword = sys.env.getOrElse("DB_PASSWORD", "postgres")
 
   // Instanciation des repositories
@@ -167,7 +167,7 @@ object HttpServer {
 
   // Fonction pour récupérer le prix actuel d'un actif via Yahoo Finance
   def getCurrentPrice(symbol: String): Future[BigDecimal] = {
-    val url = s"https://query1.finance.yahoo.com/v8/finance/chart/$symbol"
+    val url = s"https://query1.finance.yahoo.com/v8/finance/chart/$symbol?range=7d&interval=1m"
     Http()(classicSystem).singleRequest(HttpRequest(uri = url)).flatMap { response =>
       Unmarshal(response.entity).to[String].map { jsonString =>
         parse(jsonString) match {

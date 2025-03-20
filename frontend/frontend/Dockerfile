@@ -1,16 +1,24 @@
-# Étape 1 : Build
+# Étape 1 : Build avec Node.js
 FROM node:18-alpine AS builder
 WORKDIR /app
+
+# Copier uniquement package.json pour éviter de re-télécharger les dépendances à chaque modification
 COPY package*.json ./
 RUN npm install
-COPY . .
-RUN npm run build
 
-# Étape 2 : Serveur web avec Nginx
-FROM nginx:alpine
-# Copier le dossier de build généré (généralement "dist") dans le dossier d'accueil de Nginx
-COPY --from=builder /app/dist /usr/share/nginx/html
-# Copier la configuration Nginx personnalisée depuis /frontend/config/default.conf vers /etc/nginx/conf.d/default.conf
-COPY config/default.conf /etc/nginx/conf.d/default.conf
-EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
+# Copier le reste du projet
+COPY . .
+
+# Définir une variable d'environnement pour distinguer dev/prod
+ARG NODE_ENV=production
+ENV NODE_ENV=${NODE_ENV}
+
+# Si on est en production, on génère un build
+RUN if [ "$NODE_ENV" = "production" ]; then npm run build; fi
+
+# Étape 2 : Exécuter le serveur en mode développement
+FROM node:18-alpine AS development
+WORKDIR /app
+COPY --from=builder /app .
+EXPOSE 3000
+CMD ["npm", "run", "dev"]
