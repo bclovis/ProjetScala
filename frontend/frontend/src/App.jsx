@@ -7,7 +7,7 @@ import RegisterPage from "./pages/RegisterPage";
 import Dashboard from "./pages/Dashboard";
 import MarketDashboard from "./components/MarketData";
 import AddAssetPage from "./pages/AddAssetPage";
-import SellAssetPage from "./pages/SellAssetPage"; // Importez la page de vente
+import SellAssetPage from "./pages/SellAssetPage";
 import CreatePortfolioPage from "./pages/CreatePortfolioPage";
 import DepositPage from "./pages/DepositPage";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -15,7 +15,7 @@ import Header from "./components/Header";
 import MarketPage from "./pages/MarketPage";
 import "./index.css"
 
-// Définissez votre thème personnalisé
+
 const theme = createTheme({
     palette: {
         background: {
@@ -29,7 +29,6 @@ const theme = createTheme({
             700: "#6b6d74",
             300: "#f0f0f3",
         },
-        // Ajoutez d'autres couleurs selon vos besoins
     },
     text: {
         primary: "#ffffff",
@@ -39,12 +38,12 @@ const theme = createTheme({
         h2: {
             fontSize: "32px",
             fontWeight: 800,
-            color: "#ffffff", // par exemple
+            color: "#ffffff",
         },
         h6: {
             fontSize: "14px",
             fontWeight: 600,
-            color: "#ffffff", // par exemple
+            color: "#ffffff",
         },
         h5: {
             fontSize: "12px",
@@ -56,7 +55,6 @@ const theme = createTheme({
 
 const App = () => {
     const token = localStorage.getItem("token");
-    console.log("Token:", token); // Ajoutez ce log pour vérifier le jeton
 
     return (
         <ThemeProvider theme={theme}>

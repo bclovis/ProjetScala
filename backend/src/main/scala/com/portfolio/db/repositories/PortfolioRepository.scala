@@ -11,7 +11,7 @@ class PortfolioRepository(dbUrl: String, dbUser: String, dbPassword: String) {
 
   private def getConnection(): Connection = Database.getConnection()
 
-  /** 🔹 Récupère les portefeuilles d’un utilisateur **/
+  /** Récuperer les portefeuilles d’un utilisateur **/
   def getPortfolios(userId: Int)(implicit ec: ExecutionContext): Future[List[Portfolio]] = Future {
     val connection = getConnection()
     try {
@@ -35,7 +35,7 @@ class PortfolioRepository(dbUrl: String, dbUser: String, dbPassword: String) {
     }
   }
 
-  /** 🔹 Crée un nouveau portefeuille **/
+  /** Créer un nouveau portefeuille **/
   def createPortfolio(userId: Int, name: String)(implicit ec: ExecutionContext): Future[Portfolio] = Future {
     val connection = getConnection()
     try {
@@ -57,7 +57,7 @@ class PortfolioRepository(dbUrl: String, dbUser: String, dbPassword: String) {
     }
   }
 
-  /** 🔹 Met à jour le solde d’un portefeuille **/
+  /** Mettre à jour le solde d’un portefeuille **/
   def updatePortfolioBalance(portfolioId: Int, symbol: String, assetType: String, balance: BigDecimal)(implicit ec: ExecutionContext): Future[Unit] = Future {
     val connection = getConnection()
     try {
@@ -80,7 +80,7 @@ class PortfolioRepository(dbUrl: String, dbUser: String, dbPassword: String) {
   }
 
 
-  /** 🔹 Récupère le solde d’un portefeuille **/
+  /** Récuperer le solde d’un portefeuille **/
   def getPortfolioBalance(portfolioId: Int)(implicit ec: ExecutionContext): Future[Option[BigDecimal]] = Future {
     val connection = getConnection()
     try {

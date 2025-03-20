@@ -19,7 +19,13 @@ const CoinInfo = ({ coin, portfolioId, token, availableBalance, walletBalance, o
     const maxAmount = availableBalance && currentPrice ? availableBalance / currentPrice : 0;
 
     const priceData = {
-        labels: coin.prices.map(point => new Date(point.timestamp).toLocaleDateString()),
+        labels: coin.prices.map(point => {
+            const date = new Date(point.timestamp);
+            return date.toLocaleString("fr-FR", { 
+                day: "2-digit", month: "2-digit", year: "2-digit",
+                hour: "2-digit", minute: "2-digit"
+            });
+        }),
         datasets: [
             {
                 label: "Price",
@@ -27,10 +33,14 @@ const CoinInfo = ({ coin, portfolioId, token, availableBalance, walletBalance, o
                 borderColor: "#00ff99",
                 backgroundColor: "rgba(0,255,153,0.2)",
                 fill: true,
+                tension: 0.4,
+                pointRadius: 0,
+                pointHoverRadius: 0,
+                borderWidth: 2,
             },
         ],
     };
-
+        
     const handleSubmit = () => {
         if (!portfolioId || !token || currentPrice <= 0 || quantity <= 0 || quantity > maxAmount) {
             setSnackbarMessage("Erreur : Paramètres invalides.");
@@ -40,7 +50,7 @@ const CoinInfo = ({ coin, portfolioId, token, availableBalance, walletBalance, o
         }
 
         const assetData = {
-            asset_type: "crypto",
+            asset_type: coin.assetType.toLowerCase(),
             symbol: coin.symbol,
             quantity: parseFloat(quantity),
             avg_buy_price: currentPrice
@@ -123,7 +133,7 @@ const CoinInfo = ({ coin, portfolioId, token, availableBalance, walletBalance, o
                         valueLabelDisplay="auto"
                         min={0}
                         max={maxAmount}
-                        step={0.0001}
+                        step={0.1}
                     />
                     <Typography variant="body2">
                         Montant total: {(quantity * currentPrice).toFixed(2)} €

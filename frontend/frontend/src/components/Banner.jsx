@@ -10,7 +10,7 @@ const Banner = () => {
       fontSize: "24px",
       fontWeight: "bold"
     }}>
-      Welcome to Crypto Market
+      Bienvenue à Crypto Market
     </div>
   );
 };

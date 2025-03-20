@@ -1,7 +1,6 @@
 //frontend/src/pages/RegisterPage.jsx
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-//import '../styles/LoginPage.css'; // Réutilisation du CSS de LoginPage
 import logo from '../assets/Logo.png';
 
 const RegisterPage = () => {
@@ -29,7 +28,6 @@ const RegisterPage = () => {
 
             // Stocker le token renvoyé par le backend
             localStorage.setItem("token", data.token);
-            // Rediriger immédiatement vers le dashboard
             navigate("/dashboard");
         } catch (err) {
             setError(err.message);

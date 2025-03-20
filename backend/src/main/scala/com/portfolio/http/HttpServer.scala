@@ -99,7 +99,7 @@ import com.portfolio.services.BalanceService
 import java.time.LocalDateTime
 import org.mindrot.jbcrypt.BCrypt
 
-// Classes d'aide pour le parsing JSON
+// Classes pour le parsing JSON
 case class Credentials(email: String, password: String)
 case class AssetData(assetType: String, symbol: String, quantity: BigDecimal, avgBuyPrice: BigDecimal)
 case class DepositData(amount: BigDecimal)
@@ -109,8 +109,8 @@ object HttpServer {
 
   // Configuration de la base de données
   val dbUrl = sys.env.getOrElse("DB_URL", "jdbc:postgresql://postgres:5432/portfolio_db")
-  val dbUser = sys.env.getOrElse("DB_USER", "elouanekoka")
-  val dbPassword = sys.env.getOrElse("DB_PASSWORD", "postgres")
+  val dbUser = sys.env.getOrElse("DB_USER", "postgres")
+  val dbPassword = sys.env.getOrElse("DB_PASSWORD", "Anis93350")
 
   // Instanciation des repositories
   val portfolioRepo   = new PortfolioRepository(dbUrl, dbUser, dbPassword)
@@ -165,9 +165,9 @@ object HttpServer {
     "marketDataActorSubscriber"
   ))
 
-  // Fonction pour récupérer le prix actuel d'un actif via Yahoo Finance
+  // Fonction pour récupérer le prix actuel d'un actif
   def getCurrentPrice(symbol: String): Future[BigDecimal] = {
-    val url = s"https://query1.finance.yahoo.com/v8/finance/chart/$symbol"
+    val url = s"https://query1.finance.yahoo.com/v8/finance/chart/$symbol?range=2d&interval=1m"
     Http()(classicSystem).singleRequest(HttpRequest(uri = url)).flatMap { response =>
       Unmarshal(response.entity).to[String].map { jsonString =>
         parse(jsonString) match {
@@ -180,10 +180,8 @@ object HttpServer {
               .downField("open")
               .as[Seq[Double]]
               .getOrElse(Seq())
-            // Tente de récupérer le premier prix non nul dans "open"
             val priceFromOpenOpt: Option[Double] = openPrices.reverse.find(price => !price.isNaN && price > 0.0)
             val price: BigDecimal = priceFromOpenOpt.map(BigDecimal(_)).getOrElse {
-              // Si aucun prix valide dans "open", utiliser regularMarketPrice
               cursor.downField("meta").downField("regularMarketPrice").as[Double].toOption match {
                 case Some(p) if p > 0.0 => BigDecimal(p)
                 case _ => BigDecimal(0)
@@ -626,7 +624,7 @@ object HttpServer {
     }
   }
 
-  // On ignore le champ avg_buy_price reçu du client
+  // Ignorer le champ avg_buy_price reçu du client
   def parseAssetData(json: String): AssetData = {
     parse(json) match {
       case Right(parsedJson) =>

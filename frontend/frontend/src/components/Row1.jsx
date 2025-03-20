@@ -9,7 +9,6 @@ const Row1 = ({ performanceData }) => {
             <DashboardBox gridArea="c">
                 <MarketDashboard marketData={performanceData} />
             </DashboardBox>
-            {/* Vous pouvez ajouter d'autres boxes ou composants si besoin */}
         </>
     );
 };

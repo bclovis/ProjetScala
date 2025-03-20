@@ -5,14 +5,14 @@ import "@fortawesome/fontawesome-free/css/all.min.css";
 import "@/styles/LoginPage.css"; // Assurez-vous que ce fichier existe
 
 const LoginPage = () => {
-    const [isActive, setIsActive] = useState(false); // false = Sign In, true = Sign Up
+    const [isActive, setIsActive] = useState(false);
     const [username, setUsername] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
     const navigate = useNavigate();
 
-    // Vérifie si l'utilisateur est déjà connecté
+    // Vérifier si l'utilisateur est déjà connecté
     useEffect(() => {
         const token = localStorage.getItem("token");
         if (token) {
@@ -35,8 +35,9 @@ const LoginPage = () => {
             const data = await response.json();
             if (!response.ok) throw new Error(data.message || "Échec de connexion");
 
+            
             localStorage.setItem("token", data.token); // Stocke le JWT
-            navigate("/dashboard"); // Redirige après connexion
+            navigate("/dashboard");
         } catch (err) {
             setError(err.message);
         }
@@ -58,7 +59,7 @@ const LoginPage = () => {
             if (!response.ok) throw new Error(data.message || "Échec de l'inscription");
 
             localStorage.setItem("token", data.token); // Stocke le JWT
-            navigate("/dashboard"); // Redirige après inscription
+            navigate("/dashboard");
         } catch (err) {
             setError(err.message);
         }

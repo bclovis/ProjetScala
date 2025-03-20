@@ -3,7 +3,7 @@ services:
     image: postgres:latest
     container_name: postgres_db
     environment:
-      POSTGRES_USER: elouanekoka
+      POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: portfolio_db
     ports:
@@ -13,7 +13,7 @@ services:
       - ./initdb:/docker-entrypoint-initdb.d
     restart: always
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U elouanekoka -d portfolio_db"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d portfolio_db"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -25,23 +25,35 @@ services:
       - "8080:8080"
     environment:
       - DB_URL=jdbc:postgresql://postgres:5432/portfolio_db
-      - DB_USER=elouanekoka
+      - DB_USER=postgres
       - DB_PASSWORD=postgres
     depends_on:
       postgres:
         condition: service_healthy
     restart: always
+    volumes:
+      - ./backend:/app  # Ce volume est correct
+      - /app/target     # Ignore les fichiers compilés
+      - /app/.bloop     # Ignorer les fichiers de Bloop
+      - /app/.metals    # Ignorer les fichiers Metals
+    command: ["sbt", "~run"]  # Correct pour le hot-reload
 
   frontend:
     build:
       context: ./frontend/frontend
       dockerfile: Dockerfile
+      args:
+        - NODE_ENV=development  # Permet de détecter l'environnement
     container_name: react_frontend
     ports:
-      - "3000:80"
+      - "3000:3000"
+    volumes:
+      - ./frontend/frontend:/app  # Synchronisation des fichiers locaux
+      - /app/node_modules  # Ignore node_modules pour éviter les conflits
     depends_on:
       - backend
     restart: always
+    command: ["npm", "run", "dev"]  # Démarrage en mode développement
 
 volumes:
   postgres_data:

@@ -19,7 +19,7 @@ class AccountSummaryService(
                            )(implicit system: ActorSystem, ec: ExecutionContext) {
 
   def getCurrentPrice(symbol: String): Future[BigDecimal] = {
-    val url = s"https://query1.finance.yahoo.com/v8/finance/chart/$symbol"
+    val url = s"https://query1.finance.yahoo.com/v8/finance/chart/$symbol?range=2d&interval=10m"
     Http().singleRequest(HttpRequest(uri = url)).flatMap { response =>
       Unmarshal(response.entity).to[String].map { jsonString =>
         parse(jsonString) match {
@@ -46,11 +46,11 @@ class AccountSummaryService(
       assets = assetsList.flatten
       assetValues <- Future.sequence(assets.map { asset =>
         getCurrentPrice(asset.symbol).map { currentPrice =>
-          // Retourne un tuple (type d'actif, valeur)
+          // Retourner un tuple (type d'actif, valeur)
           (asset.assetType, asset.quantity * currentPrice)
         }
       })
-      // Regroupement et transformation des types pour correspondre à l'affichage souhaité
+      // Regroupemer et transformer des types pour correspondre à l'affichage souhaité
       grouped = assetValues.groupBy {
         case (assetType, _) =>
           assetType match {

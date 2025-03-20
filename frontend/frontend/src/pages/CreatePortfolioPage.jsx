@@ -5,7 +5,6 @@ import CreatePortfolio from "../components/portfolio/CreatePortfolio.jsx";
 const CreatePortfolioPage = () => {
     const handlePortfolioCreated = () => {
         alert("Portefeuille créé avec succès !");
-        // Rediriger ou actualiser la page selon vos besoins
     };
 
     return (
