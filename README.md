@@ -13,10 +13,6 @@ Table des Matières
 	•	Frontend
 	•	Base de Données
 	•	Utilisation
-	•	Tests
-	•	Contribution
-	•	Licence
-	•	Contact
 
 Présentation
 
