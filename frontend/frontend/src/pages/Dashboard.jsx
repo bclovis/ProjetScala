@@ -46,7 +46,9 @@ const Dashboard = () => {
     });
 
     const fetchPortfolios = () => {
+        const token = localStorage.getItem("token");
         if (!token) {
+            console.error("Aucun token trouvé, redirection vers la connexion.");
             navigate("/login");
             return;
         }
@@ -58,26 +60,37 @@ const Dashboard = () => {
                 "Authorization": `Bearer ${token}`,
             },
         })
-            .then((res) => res.json())
-            .then((data) => {
-                console.log("API portfolios response:", data); // 🔍 Vérifier ce que l'API retourne
+        .then((res) => {
+            if (res.status === 401) {
+                console.warn(" Token expiré. Déconnexion en cours...");
+                localStorage.removeItem("token");
+                navigate("/login");
+                return null;
+            }
+            if (!res.ok) {
+                throw new Error(`Erreur API: ${res.status}`);
+            }
+            return res.json();
+        })
+        .then((data) => {
+            if (!data) return;
 
-                if (data && data.length > 0) {
-                    setPortfolios(data);
+            console.log(" API portfolios response:", data);
 
-                    // Si selectedPortfolio est null ou n'existe plus, on prend le premier dispo
-                    if (!selectedPortfolio || !data.some(p => p.id === selectedPortfolio)) {
-                        setSelectedPortfolio(data[0].id);
-                        localStorage.setItem("selectedPortfolio", data[0].id);
-                    }
-                } else {
-                    console.warn("⚠️ L'API a retourné un tableau vide pour portfolios !");
-                    setPortfolios([]); // Empêche les erreurs de rendu
+            if (data.length > 0) {
+                setPortfolios(data);
+                if (!selectedPortfolio || !data.some(p => p.id === selectedPortfolio)) {
+                    setSelectedPortfolio(data[0].id);
+                    localStorage.setItem("selectedPortfolio", data[0].id);
                 }
-            })
-            .catch((err) => {
-                console.error("Erreur lors de la récupération des portfolios:", err);
-            });
+            } else {
+                console.warn(" Aucun portefeuille trouvé !");
+                setPortfolios([]); // Garde l'état propre
+            }
+        })
+        .catch((err) => {
+            console.error(" Erreur lors de la récupération des portfolios:", err);
+        });
     };
 
     const fetchGlobalBalance = () => {
@@ -128,7 +141,7 @@ const Dashboard = () => {
 
         // Mise à jour des portfolios toutes les 30 secondes
         const interval = setInterval(fetchPortfolios, 30000);
-        return () => clearInterval(interval); // Nettoyer l'intervalle en cas de démontage
+        return () => clearInterval(interval);
     }, [navigate, token]);
 
     // Mettre à jour le localStorage lorsque selectedPortfolio change
@@ -154,8 +167,8 @@ const Dashboard = () => {
         }
     }, [selectedPortfolio, token]);
 
-    console.log("🟢 selectedPortfolio:", selectedPortfolio);
-    console.log("🟢 portfolios:", portfolios);
+    console.log(" selectedPortfolio:", selectedPortfolio);
+    console.log(" portfolios:", portfolios);
 
     const gridStyle = isAboveMediumScreens
         ? {

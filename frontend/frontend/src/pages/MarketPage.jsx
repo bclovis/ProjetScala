@@ -28,7 +28,7 @@ const MarketPage = () => {
         if (savedPortfolio) {
             setSelectedPortfolio(parseInt(savedPortfolio));
         } else {
-            fetchPortfolios();  // Charger les portefeuilles si rien n'est sauvegardé
+            fetchPortfolios();
         }
     }, [token]);
 
@@ -44,7 +44,7 @@ const MarketPage = () => {
             .then(data => {
                 if (data.length > 0 && !selectedPortfolio) {
                     setSelectedPortfolio(data[0].id);
-                    localStorage.setItem("selectedPortfolio", data[0].id);  // Sauvegarder la sélection
+                    localStorage.setItem("selectedPortfolio", data[0].id);
                 }
             })
             .catch(err => console.error(err));

@@ -19,9 +19,9 @@ const Header = () => {
 
     // Déconnexion de l'utilisateur
     const handleLogout = () => {
-        localStorage.removeItem("token"); // Supprime le token JWT
-        setIsAuthenticated(false); // Met à jour l'état
-        navigate("/login"); // Redirige vers la page de connexion
+        localStorage.removeItem("token");
+        setIsAuthenticated(false);
+        navigate("/login");
     };
 
     return (

@@ -5,13 +5,12 @@ import SellAsset from "../components/actifs/SellAsset.jsx";
 
 const SellAssetPage = () => {
     const location = useLocation();
-    // On récupère le portfolioId passé via l'état de navigation, sinon on définit une valeur par défaut
+    // Récuperer le portfolioId passé via l'état de navigation
     const portfolioId = location.state?.portfolioId || 1;
     const token = localStorage.getItem("token");
 
     const handleAssetSold = () => {
         alert("Actif vendu avec succès !");
-        // Ici, vous pourriez actualiser le portefeuille ou rediriger l'utilisateur
     };
 
     return (
