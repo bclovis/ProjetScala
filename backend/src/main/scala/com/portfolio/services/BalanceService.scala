@@ -28,7 +28,7 @@ class BalanceService(
 
   /** 🔹 Récupère le prix actuel d'un actif via Yahoo Finance et le stocke en base **/
   def fetchCurrentPrice(symbol: String, portfolioId: Int): Future[BigDecimal] = {
-    val url = s"https://query1.finance.yahoo.com/v8/finance/chart/$symbol"
+    val url = s"https://query1.finance.yahoo.com/v8/finance/chart/$symbol?range=7d&interval=1m"
 
     Http().singleRequest(HttpRequest(uri = url)).flatMap { response =>
       Unmarshal(response.entity).to[String].flatMap { jsonString =>

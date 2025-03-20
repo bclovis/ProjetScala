@@ -8,7 +8,7 @@ object Database {
 
   // Récupération des variables d'environnement pour la configuration de la base de données
   private val jdbcUrl = sys.env.getOrElse("DB_URL", "jdbc:postgresql://postgres:5432/portfolio_db")
-  private val dbUser = sys.env.getOrElse("DB_USER", "elouanekoka")
+  private val dbUser = sys.env.getOrElse("DB_USER", "postgres")
   private val dbPassword = sys.env.getOrElse("DB_PASSWORD", "postgres")
 
   // Configuration de HikariCP
